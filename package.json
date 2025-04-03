@@ -1,0 +1,27 @@
+{
+  "name": "ai-secretary2",
+  "version": "0.1.0",
+  "description": "AI秘書プロジェクト - Discordインターフェースと生成AIを活用",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "discord",
+    "secretary",
+    "assistant"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.11.0",
+    "dotenv": "^16.0.3",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
