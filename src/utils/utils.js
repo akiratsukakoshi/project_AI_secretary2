@@ -8,7 +8,7 @@ function parseDateTime(dateStr) {
   try {
     // シンプルなISOフォーマット対応のパース
     const date = new Date(dateStr);
-    if (\!isNaN(date.getTime())) {
+    if (!isNaN(date.getTime())) {
       return date;
     }
     return null;
@@ -25,7 +25,7 @@ function parseDateTime(dateStr) {
  * @returns {string} - フォーマットされた日時文字列
  */
 function formatDateTime(date, format = 'medium') {
-  if (\!date) return '';
+  if (!date) return '';
   
   const options = {
     short: { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' },
