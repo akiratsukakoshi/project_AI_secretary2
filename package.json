@@ -17,11 +17,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.11.0",
-    "dotenv": "^16.0.3",
-    "openai": "^4.0.0"
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7",
+    "openai": "^4.91.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "@types/dotenv": "^6.1.1",
+    "@types/node": "^22.14.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "eslint": "^9.24.0",
+    "eslint-config-prettier": "^10.1.1",
+    "nodemon": "^2.0.22",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }
