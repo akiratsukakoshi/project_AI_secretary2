@@ -5,6 +5,7 @@ import memoryService from './services/memory-service';
 import logger from './utilities/logger';
 import { env } from './config/env';
 import { setupGlobalErrorHandlers } from './utilities/error-handler';
+import { testRAGConnection } from './modules/rag/rag-test';
 
 // グローバルエラーハンドラーのセットアップ
 setupGlobalErrorHandlers();
@@ -51,6 +52,12 @@ client.on(Events.MessageCreate, async (message: Message) => {
       message.reply('こんにちは！AI秘書「ガクコ」です。何かお手伝いできることはありますか？');
       return;
     }
+
+    // 特別なコマンドチェック
+    if (prompt.toLowerCase() === 'rag-test' || prompt.toLowerCase() === 'ragテスト') {
+      await handleRAGTest(message);
+      return;
+    }
     
     try {
       // 入力メッセージを会話履歴に追加
@@ -95,6 +102,29 @@ client.on(Events.MessageCreate, async (message: Message) => {
     }
   }
 });
+
+/**
+ * RAGシステムのテストを実行するハンドラー
+ */
+async function handleRAGTest(message: Message): Promise<void> {
+  try {
+    logger.info(`ユーザー ${message.author.tag} からのRAGテストリクエスト`);
+    
+    // テスト開始メッセージ
+    const processingMessage = await message.reply('RAGシステムの接続テストを実行しています... ⏳');
+    
+    // テスト実行
+    const testResult = await testRAGConnection();
+    
+    // テスト結果を送信
+    await processingMessage.edit(`${testResult}`);
+    
+    logger.info('RAGテスト完了');
+  } catch (error) {
+    logger.error('RAGテスト実行エラー:', error);
+    message.reply('RAGテストの実行中にエラーが発生しました。詳細はログを確認してください。');
+  }
+}
 
 // Discord Bot ログイン
 client.login(env.DISCORD_TOKEN).catch((error) => {

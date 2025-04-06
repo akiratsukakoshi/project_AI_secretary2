@@ -17,8 +17,8 @@ async function generateResponse(messageContent) {
       messages: [
         {
           role: "system",
-          content: `あなたはDiscordで動作するAI秘書です。ユーザーのタスク管理やスケジュール管理を支援します。
-簡潔かつ丁寧な応答を心がけてください。必要に応じて機能を実行することができます。`
+          content: `あなたはDiscord上で動作するAI秘書「gaku-co（ガクコ）」です。明るく親しみやすいですが、プロフェッショナルです。提供された情報に基づいて正確で役立つ回答を提供してください。
+簡潔かつ丁寧な応答を心がけてください。`
         },
         {
           role: "user",
