@@ -43,7 +43,7 @@ class Chunker {
 
     // FAQの質問と回答のペアを抽出
     const documentId = document.id || 'temp-id';
-    while ((match = faqPattern.exec(document.content)) \!== null) {
+    while ((match = faqPattern.exec(document.content)) !== null) {
       const question = match[1].trim();
       const answer = match[2].trim();
 
@@ -126,7 +126,7 @@ class Chunker {
     const documentId = document.id || 'temp-id';
 
     // 見出しを探して分割
-    while ((match = headingPattern.exec(content)) \!== null) {
+    while ((match = headingPattern.exec(content)) !== null) {
       const heading = match[1].trim();
       const startIndex = match.index;
       
@@ -187,11 +187,11 @@ class Chunker {
     const paragraphs = content.split(/\n\s*\n/);
     
     let currentChunk = '';
-    let currentParagraphs = [];
+    let currentParagraphs: string[] = [];
     
     for (const paragraph of paragraphs) {
       const trimmedParagraph = paragraph.trim();
-      if (\!trimmedParagraph) continue;
+      if (!trimmedParagraph) continue;
       
       currentParagraphs.push(trimmedParagraph);
       currentChunk += (currentChunk ? '\n\n' : '') + trimmedParagraph;
@@ -265,11 +265,11 @@ class Chunker {
         const nextSentenceEnd = content.indexOf('.', endIndex);
         const nextParagraphEnd = content.indexOf('\n', endIndex);
         
-        if (nextSentenceEnd \!== -1 && (nextParagraphEnd === -1 || nextSentenceEnd < nextParagraphEnd)) {
+        if (nextSentenceEnd !== -1 && (nextParagraphEnd === -1 || nextSentenceEnd < nextParagraphEnd)) {
           endIndex = nextSentenceEnd + 1;
-        } else if (nextParagraphEnd \!== -1 && nextParagraphEnd - endIndex < 100) {
+        } else if (nextParagraphEnd !== -1 && nextParagraphEnd - endIndex < 100) {
           endIndex = nextParagraphEnd + 1;
-        } else if (nextSentenceEnd \!== -1 && nextSentenceEnd - endIndex < 100) {
+        } else if (nextSentenceEnd !== -1 && nextSentenceEnd - endIndex < 100) {
           endIndex = nextSentenceEnd + 1;
         }
       }

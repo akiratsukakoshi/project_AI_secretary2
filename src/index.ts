@@ -6,6 +6,7 @@ import logger from './utilities/logger';
 import { env } from './config/env';
 import { setupGlobalErrorHandlers } from './utilities/error-handler';
 import { testRAGConnection } from './modules/rag/rag-test';
+import discordRagIntegration from './modules/rag/discordRagIntegration';
 
 // グローバルエラーハンドラーのセットアップ
 setupGlobalErrorHandlers();
@@ -49,7 +50,7 @@ client.on(Events.MessageCreate, async (message: Message) => {
     
     // 空のプロンプトチェック
     if (prompt.trim().length === 0) {
-      message.reply('こんにちは！AI秘書「ガクコ」です。何かお手伝いできることはありますか？');
+      message.reply({ content: 'こんにちは！AI秘書「ガクコ」です。何かお手伝いできることはありますか？' });
       return;
     }
 
@@ -60,45 +61,27 @@ client.on(Events.MessageCreate, async (message: Message) => {
     }
     
     try {
-      // 入力メッセージを会話履歴に追加
-      await memoryService.addMessage(
-        message.author.id,
-        message.channel.id,
-        {
-          role: 'user',
-          content: prompt,
-          timestamp: new Date()
-        }
-      );
+      // 「考え中...」メッセージを表示
+      const typingMessage = await (message.channel as any).send({ content: '考え中...' });
       
-      // 会話履歴を取得
-      const context = await memoryService.getConversation(
-        message.author.id,
-        message.channel.id
-      );
+      // DiscordBot-RAG統合モジュールでメッセージを処理
+      const { response, usedRag } = await discordRagIntegration.processMessage(message, prompt);
       
-      // AIからの応答を取得
-      logger.debug(`ユーザー入力: ${prompt}`);
-      const typingMessage = await message.channel.send('考え中...');
-      const aiResponse = await openaiService.generateResponse(prompt, context.messages);
+      // 「考え中...」メッセージを削除
       await typingMessage.delete();
       
-      // 応答を会話履歴に追加
-      await memoryService.addMessage(
-        message.author.id,
-        message.channel.id,
-        {
-          role: 'assistant',
-          content: aiResponse,
-          timestamp: new Date()
-        }
-      );
+      // RAGを使用したかどうかをログに記録
+      if (usedRag) {
+        logger.info(`RAGを使用した応答を生成しました: ${response.substring(0, 50)}...`);
+      } else {
+        logger.info(`通常応答を生成しました: ${response.substring(0, 50)}...`);
+      }
       
-      logger.debug(`AI応答: ${aiResponse.substring(0, 50)}...`);
-      message.reply(aiResponse);
+      // 応答を送信
+      message.reply({ content: response });
     } catch (error) {
       logger.error('エラーが発生しました:', error);
-      message.reply('処理中にエラーが発生しました。もう一度お試しください。');
+      message.reply({ content: '処理中にエラーが発生しました。もう一度お試しください。' });
     }
   }
 });
@@ -111,7 +94,7 @@ async function handleRAGTest(message: Message): Promise<void> {
     logger.info(`ユーザー ${message.author.tag} からのRAGテストリクエスト`);
     
     // テスト開始メッセージ
-    const processingMessage = await message.reply('RAGシステムの接続テストを実行しています... ⏳');
+    const processingMessage = await message.reply({ content: 'RAGシステムの接続テストを実行しています... ⏳' });
     
     // テスト実行
     const testResult = await testRAGConnection();
@@ -122,7 +105,7 @@ async function handleRAGTest(message: Message): Promise<void> {
     logger.info('RAGテスト完了');
   } catch (error) {
     logger.error('RAGテスト実行エラー:', error);
-    message.reply('RAGテストの実行中にエラーが発生しました。詳細はログを確認してください。');
+    message.reply({ content: 'RAGテストの実行中にエラーが発生しました。詳細はログを確認してください。' });
   }
 }
 

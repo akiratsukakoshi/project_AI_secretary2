@@ -7,7 +7,7 @@ function createTestDocsDirectory(): string {
   const testDocsDir = path.resolve(__dirname, '../../test-docs');
   
   // ディレクトリが存在しない場合は作成
-  if (\!fs.existsSync(testDocsDir)) {
+  if (!fs.existsSync(testDocsDir)) {
     fs.mkdirSync(testDocsDir, { recursive: true });
     console.log(`ディレクトリを作成しました: ${testDocsDir}`);
   }

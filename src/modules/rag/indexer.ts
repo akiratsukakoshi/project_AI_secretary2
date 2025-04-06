@@ -70,7 +70,7 @@ class Indexer {
       // 1. 既存のドキュメントを取得
       const existingDocument = await ragService.getDocumentById(documentId);
       
-      if (\!existingDocument) {
+      if (!existingDocument) {
         throw new Error('更新対象のドキュメントが見つかりません');
       }
       
