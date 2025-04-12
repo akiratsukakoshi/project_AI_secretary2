@@ -21,13 +21,17 @@
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
+    "date-fns": "^4.1.0",
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7",
-    "openai": "^4.91.1"
+    "openai": "^4.91.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@types/date-fns": "^2.5.3",
     "@types/dotenv": "^6.1.1",
     "@types/node": "^22.14.0",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.29.0",
     "@typescript-eslint/parser": "^8.29.0",
     "eslint": "^9.24.0",
