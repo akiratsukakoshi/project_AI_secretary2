@@ -1,0 +1,470 @@
+/**
+ * タスク管理関連のプロンプトテンプレート
+ * Notionタスク管理ワークフローで使用するプロンプトを定義
+ */
+
+/**
+ * タスク管理関連のプロンプトテンプレート
+ */
+export const taskPrompts = {
+  /**
+   * ツール選択プロンプトを構築
+   * @param userQuery ユーザークエリ
+   * @param availableTools 利用可能なツール一覧
+   * @param contextInfo 追加コンテキスト情報
+   * @returns 構築されたプロンプト
+   */
+  buildToolSelectionPrompt: (
+    userQuery: string, 
+    availableTools: Array<{
+      name: string;
+      description: string;
+      parameters: Record<string, any>;
+    }>,
+    contextInfo?: string
+  ): string => {
+    // 環境変数の値をハードコードして安全に使用
+    // 変数として参照しない、直接文字列として埋め込む
+    // 注意: 以下のIDを直接文字列として使用し、変数参照や文字列内での変数展開はしない
+    const taskDbIdValue = "1d39a1dfe8368135941de579ca166c05"; // 直接文字列値を使用
+    const staffDbIdValue = "1d39a1dfe83681cb8daad265d38d1c7e"; // 直接文字列値を使用
+    
+    const toolDescriptions = availableTools.map(tool => {
+      const paramsDescription = Object.entries(tool.parameters).map(
+        ([name, desc]) => `    - ${name}: ${desc.description || desc}`
+      ).join('\n');
+      
+      return `- ${tool.name}: ${tool.description}\n  Parameters:\n${paramsDescription}`;
+    }).join('\n\n');
+    
+    // ユーザークエリをエスケープして安全に使用
+    const escapedQuery = userQuery.replace(/[\\$"`]/g, '\\$&');
+    
+    // 安全なテンプレート文字列構築
+    let promptText = `
+あなたはタスク管理システム「gaku-co（ガクコ）」の一部として、Notionデータベースを使ったタスク管理を担当しています。
+ユーザーの要求: "${escapedQuery}"
+
+`;
+
+    // コンテキスト情報を安全に追加
+    if (contextInfo) {
+      const escapedContext = contextInfo.replace(/[\\$"`]/g, '\\$&');
+      promptText += `コンテキスト情報:\n${escapedContext}\n\n`;
+    }
+    
+    // ツール情報を追加
+    promptText += `利用可能なツール:\n${toolDescriptions}
+
+これらのツールを使って、ユーザーの要求を実現してください。
+主に以下の機能を提供します：
+
+1. タスクの参照・検索:
+   - 担当者、状態、期限日などでタスクを検索できます
+   - 例: 「がくちょーの未完了タスクを表示して」「今週締め切りのタスクは？」
+
+2. タスク追加:
+   - 新しいタスクを作成します
+   - タイトル、説明、担当者、期限日、カテゴリなどの情報を設定できます
+   - 例: 「議事録作成タスクを追加して、担当はガクチョで期限は金曜日まで」
+
+3. タスク更新:
+   - 既存タスクのステータス変更、担当者変更などを行います
+   - 例: 「プロジェクト計画書タスクを完了にして」
+
+重要な点:
+- データベースIDの設定 (非常に重要): 
+  - タスクデータベースIDは直接 "${taskDbIdValue}" この値を使用してください
+  - スタッフマスタデータベースIDは直接 "${staffDbIdValue}" この値を使用してください
+  - taskDbIdや変数式などの変数名や式は絶対に使用しないでください
+  - taskDbId()のような関数呼び出しは絶対に使用しないでください
+  - database_id: taskDbId や database_id: taskDbId() などは絶対に使用せず、必ず database_id: "1d39a1dfe8368135941de579ca166c05" のようにそのままハードコードされた文字列を使用してください
+  - JSONの値としてIDを設定する場合は常に "1d39a1dfe8368135941de579ca166c05" のようにダブルクォートで囲んでください
+
+- 担当者の特定方法:
+  - 担当者をフィルターする際は、本名（例: "塚越暁"）ではなく必ず表示名（例: "ガクチョ"）を使用してください
+  - 本名から表示名への変換には、スタッフマスタDBから情報を取得する必要があります
+  - queryDatabaseでスタッフマスタDBから表示名を取得し、それをタスク検索のフィルターに使用してください
+
+- スタッフ名の識別: "ガクチョ"、"がくちょー"、"塚越暁" などの異なる表記は同じ人物を指します
+- 日付の解釈: "明日"、"今週金曜日"、"4/20" など様々な日付表現を適切に解釈してください
+- 必要な情報の確認: タスク追加時に情報が不足している場合は、ユーザーに確認してください
+
+- Notionプロパティの型構造と正確な名称（重要）:
+  - 各プロパティタイプごとに正しいフィルター構文を使用してください:
+  - タイトル（title型）: { "property": "タイトル", "title": { "contains": "議事録" } }
+  - 説明（rich_text型）: { "property": "説明", "rich_text": { "contains": "資料作成" } }
+  - 期限（date型）: { "property": "期限", "date": { "on_or_after": "2025-04-15" } } - 正確な名称は「期限日」ではなく「期限」です
+  - 状態（select型）: { "property": "状態", "select": { "equals": "未着手" } } - 有効な値は「未着手」「進行中」「完了」「保留」「キャンセル」のみ
+  - 担当者（text型）: { "property": "担当者", "text": { "equals": "ガクチョ" } }
+  
+  - "status"という型は存在しないので、select型の状態フィルターには必ず"select"キーを使ってください
+  - 「未完了タスク」を検索する場合は、次のようなOR条件の複合フィルターを使用してください:
+    \`\`\`
+    "filter": {
+      "or": [
+        { "property": "状態", "select": { "equals": "未着手" }},
+        { "property": "状態", "select": { "equals": "進行中" }}
+      ]
+    }
+    \`\`\`
+
+クエリの内容に最適なツールとパラメータをJSON形式で出力してください。
+タスク一覧の取得には queryDatabase を使用し、新規タスク作成には createPage を、
+タスク更新には updatePage を使用します。
+
+最も重要: あなたの出力が JSON として安全であることを確認してください
+- データベースIDは常に文字列リテラルとして出力してください: "1d39a1dfe8368135941de579ca166c05"
+- taskDbId や TASK_DB_ID などの変数名を文字列として出力することさえ避けてください
+- "database_id": "taskDbId" のように変数名を文字列としてパラメータ値に含めることも避けてください
+- 関数形式（丸括弧を含む形式）は絶対に出力しないでください
+- JSONの全フィールドは必ず文字列リテラル、数値リテラル、配列リテラル、またはオブジェクトリテラルのみを使用してください
+- パラメータ値にコメントを含めることも避けてください
+
+安全な出力例:
+{
+  "tool": "queryDatabase",
+  "parameters": {
+    "database_id": "1d39a1dfe8368135941de579ca166c05",
+    "filter": { "property": "タイトル", "title": { "contains": "会議" } }
+  }
+}
+
+出力形式: 
+{
+  "tool": "選択したツール名",
+  "parameters": {
+    "パラメータ名": "パラメータ値",
+    ...
+  },
+  "reasoning": "このツールを選んだ理由と、パラメータをどのように決定したか"
+}
+`;
+
+    // 最終的なプロンプトを返す
+    return promptText;
+  },
+  
+  /**
+   * レスポンスをフォーマット
+   * @param data APIからのレスポンスデータ
+   * @param toolType 使用したツール種別
+   * @returns フォーマットされたレスポンス
+   */
+  formatResponse: (data: any, toolType: string): string => {
+    // ツール種別に応じた結果の整形ロジック
+    switch (toolType) {
+      case 'queryDatabase':
+        if (!data || !data.results || data.results.length === 0) {
+          return '条件に一致するタスクはありません。';
+        }
+        
+        return formatTaskList(data.results);
+        
+      case 'createPage':
+        try {
+          // 新規作成したタスクの情報を抽出
+          const title = getTitle(data);
+          const dueDate = getDate(data, '期限');
+          const assignees = getAssignees(data);
+          
+          let response = `新しいタスク「${title}」を作成しました。`;
+          
+          // 期限がある場合は追加
+          if (dueDate) {
+            response += `\n期限: ${formatDate(new Date(dueDate))}`;
+          }
+          
+          // 担当者がある場合は追加
+          if (assignees) {
+            response += `\n担当: ${assignees}`;
+          }
+          
+          return response;
+        } catch (error) {
+          console.error('タスク作成結果の解析エラー:', error);
+          return `タスクを作成しました。`;
+        }
+        
+      case 'updatePage':
+        try {
+          const title = getTitle(data);
+          const status = getStatus(data);
+          
+          let response = `タスク「${title}」を更新しました。`;
+          
+          // ステータス情報がある場合は追加
+          if (status) {
+            response += `\n現在の状態: ${formatStatus(status)}`;
+          }
+          
+          return response;
+        } catch (error) {
+          console.error('タスク更新結果の解析エラー:', error);
+          return `タスクを更新しました。`;
+        }
+        
+      case 'retrievePage':
+        return formatTaskDetail(data);
+        
+      case 'deletePage':
+        return `タスクをアーカイブ（削除）しました。`;
+        
+      default:
+        // 安全のため詳細なデータは出力しない
+        return `操作が完了しました。`;
+    }
+  },
+
+  /**
+   * タスク管理のエラーメッセージをフォーマット
+   * @param error エラー情報
+   * @returns フォーマットされたエラーメッセージ
+   */
+  formatErrorMessage: (error: any): string => {
+    // エラーの種類に応じたメッセージを返す
+    const errorCode = error.code || '';
+    const errorMessage = error.message || '不明なエラーが発生しました';
+
+    switch (errorCode) {
+      case 'PERMISSION_DENIED':
+        return 'Notionデータベースへのアクセス権限がありません。';
+      case 'NOT_FOUND':
+        return '指定されたタスクが見つかりませんでした。正しいタイトルやIDを入力してください。';
+      case 'INVALID_ARGUMENT':
+        return '入力情報が正しくありません。タスクの詳細情報を確認してください。';
+      default:
+        return `タスク操作中にエラーが発生しました: ${errorMessage}`;
+    }
+  }
+};
+
+/**
+ * Notionページからタイトルを取得
+ */
+function getTitle(data: any): string {
+  try {
+    // Notionページの「タイトル」プロパティから最初のテキスト内容を取得
+    return data.properties?.['タイトル']?.title?.[0]?.text?.content || '無題';
+  } catch (e) {
+    return '無題';
+  }
+}
+
+/**
+ * Notionページから日付プロパティを取得
+ */
+function getDate(data: any, propertyName: string): string | null {
+  try {
+    // Notionページの日付プロパティの開始日を取得
+    return data.properties?.[propertyName]?.date?.start || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Notionページからステータスを取得
+ */
+function getStatus(data: any): string | null {
+  try {
+    // Notionページの「ステータス」プロパティから選択肢の名前を取得
+    return data.properties?.['ステータス']?.select?.name || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Notionページから担当者情報を取得
+ */
+function getAssignees(data: any): string {
+  try {
+    // Notionページの「担当者」プロパティから人物リストを取得
+    const assignees = data.properties?.['担当者']?.people || [];
+    if (assignees.length === 0) return '';
+    
+    // 各担当者の名前を取得して結合
+    return assignees.map((person: any) => person.name || person.id).join(', ');
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
+ * Notionページから説明を取得
+ */
+function getDescription(data: any): string {
+  try {
+    // Notionページの「説明」プロパティからリッチテキスト内容を取得
+    const richTexts = data.properties?.['説明']?.rich_text || [];
+    if (richTexts.length === 0) return '';
+    
+    // 各リッチテキストの内容を取得して結合
+    return richTexts.map((rt: any) => rt.text?.content || '').join('');
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
+ * Notionページから優先度を取得
+ */
+function getPriority(data: any): string {
+  try {
+    // Notionページの「優先度」プロパティから選択肢の名前を取得
+    return data.properties?.['優先度']?.select?.name || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
+ * タスク一覧を整形
+ * @param tasks タスク一覧
+ * @returns 整形されたタスク一覧文字列
+ */
+function formatTaskList(tasks: any[]): string {
+  let message = `タスク一覧 (${tasks.length}件):\n\n`;
+  
+  tasks.forEach((task, index) => {
+    // 情報抽出
+    const title = getTitle(task);
+    const dueDate = getDate(task, '期限');
+    const dueStr = dueDate ? ` (期限: ${formatDate(new Date(dueDate))})` : '';
+    const status = getStatus(task);
+    const priority = getPriority(task);
+    const priorityMark = getPriorityMark(priority);
+    const assignees = getAssignees(task);
+    
+    // タイトル行
+    message += `${index + 1}. ${priorityMark} ${title}${dueStr}\n`;
+    
+    // 担当者の表示
+    if (assignees) {
+      message += `   担当: ${assignees}\n`;
+    }
+    
+    // 状態が未着手以外の場合は表示
+    if (status && status !== '未着手') {
+      message += `   状態: ${formatStatus(status)}\n`;
+    }
+    
+    message += '\n';
+  });
+  
+  return message;
+}
+
+/**
+ * タスク詳細を整形
+ * @param task タスク情報
+ * @returns 整形されたタスク詳細文字列
+ */
+function formatTaskDetail(task: any): string {
+  let message = `【タスク詳細】\n`;
+  
+  // 情報抽出
+  const title = getTitle(task);
+  const description = getDescription(task);
+  const dueDate = getDate(task, '期限');
+  const priority = getPriority(task);
+  const status = getStatus(task);
+  const assignees = getAssignees(task);
+  
+  // タイトル
+  message += `タイトル: ${title}\n`;
+  
+  // 説明
+  if (description) {
+    message += `説明: ${description}\n`;
+  }
+  
+  // 期限日
+  if (dueDate) {
+    message += `期限: ${formatDate(new Date(dueDate))}\n`;
+  }
+  
+  // 優先度
+  if (priority) {
+    message += `優先度: ${getPriorityMark(priority)} ${priority}\n`;
+  }
+  
+  // カテゴリの取得
+  const categories = task.properties?.['カテゴリ']?.relation || [];
+  if (categories.length > 0) {
+    message += `カテゴリ: ${categories.length}件のカテゴリが設定されています\n`;
+  }
+  
+  // 担当者
+  if (assignees) {
+    message += `担当: ${assignees}\n`;
+  }
+  
+  // ステータス
+  if (status) {
+    message += `ステータス: ${formatStatus(status)}\n`;
+  }
+  
+  // 作成日時と更新日時
+  if (task.created_time) {
+    message += `作成日時: ${formatDateTime(new Date(task.created_time))}\n`;
+  }
+  
+  if (task.last_edited_time) {
+    message += `更新日時: ${formatDateTime(new Date(task.last_edited_time))}\n`;
+  }
+  
+  message += `ID: ${task.id}\n`;
+  
+  return message;
+}
+
+/**
+ * 優先度に応じたマークを返す
+ * @param priority 優先度
+ * @returns 優先度を示すマーク
+ */
+function getPriorityMark(priority: string): string {
+  switch (priority) {
+    case '高': return '🔴';
+    case '中': return '🟡';
+    case '低': return '🟢';
+    default: return '⚪';
+  }
+}
+
+/**
+ * ステータスの日本語表示
+ * @param status ステータス
+ * @returns 日本語のステータス
+ */
+function formatStatus(status: string): string {
+  switch (status) {
+    case 'pending':
+    case '未着手': return '未着手';
+    case 'in_progress':
+    case '進行中': return '進行中';
+    case 'completed':
+    case '完了': return '完了';
+    default: return status;
+  }
+}
+
+/**
+ * 日付のフォーマット
+ * @param date 日付
+ * @returns フォーマットされた日付文字列
+ */
+function formatDate(date: Date): string {
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+/**
+ * 日時のフォーマット
+ * @param date 日時
+ * @returns フォーマットされた日時文字列
+ */
+function formatDateTime(date: Date): string {
+  return `${formatDate(date)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+}

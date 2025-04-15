@@ -10,6 +10,8 @@ export interface ServiceResponse {
   success: boolean;
   data?: any;
   error?: string;
+  message?: string; // ユーザーに表示するメッセージ
+  details?: any; // エラー詳細情報
 }
 
 /**

@@ -1,0 +1,43 @@
+/**
+ * 時間範囲を「13:00〜14:30」のようなフォーマットに整形
+ * @param start 開始日時
+ * @param end 終了日時
+ * @returns フォーマットされた時間範囲文字列
+ */
+export function formatTimeRange(start: Date, end: Date): string {
+  return \;
+}
+
+/**
+ * 日付時間範囲を「2023/4/7 13:00〜14:30」のようなフォーマットに整形
+ * @param start 開始日時
+ * @param end 終了日時
+ * @returns フォーマットされた日付時間範囲文字列
+ */
+export function formatDateTimeRange(start: Date, end: Date): string {
+  if (start.toDateString() === end.toDateString()) {
+    // 同じ日の場合は日付を1回だけ表示
+    return \;
+  } else {
+    // 異なる日の場合は両方の日付を表示
+    return \;
+  }
+}
+
+/**
+ * 指定された日付の開始時刻（0時0分0秒）を取得
+ * @param date 日付
+ * @returns 開始時刻
+ */
+export function getStartOfDay(date: Date): Date {
+  return startOfDay(date);
+}
+
+/**
+ * 指定された日付の終了時刻（23時59分59秒）を取得
+ * @param date 日付
+ * @returns 終了時刻
+ */
+export function getEndOfDay(date: Date): Date {
+  return endOfDay(date);
+}

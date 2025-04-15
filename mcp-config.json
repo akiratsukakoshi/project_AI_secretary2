@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "google-calendar": {
+      "command": "node",
+      "args": ["/home/tukapontas/ai-secretary2/mcp-servers/google-calendar-mcp/build/index.js"]
+    },
+    "notion-api": {
+      "command": "node",
+      "args": ["/home/tukapontas/ai-secretary2/mcp-servers/notion-mcp/build/index.js"],
+      "env": {
+        "NOTION_TOKEN": "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",
+        "NOTION_VERSION": "2022-06-28"
+      }
+    }
+  }
+}

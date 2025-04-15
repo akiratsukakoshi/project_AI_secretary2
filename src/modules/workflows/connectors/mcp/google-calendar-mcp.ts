@@ -13,11 +13,20 @@ import logger from '../../../../utilities/logger';
 export class GoogleCalendarMCPConnector extends MCPConnectorBase {
   /**
    * コンストラクタ
-   * @param baseUrl MCPサーバーのベースURL
-   * @param apiKey 認証用APIキー（オプション）
+   * @param baseUrl MCPサーバーのベースURL（API接続モードの場合）
+   * @param apiKey 認証用APIキー（API接続モードの場合、オプション）
+   * @param useMCP Claude CodeのMCPを使用するかどうか
+   * @param mcpConfigPath MCPの設定ファイルパス（useMCPがtrueの場合）
+   * @param mcpServerName MCP設定ファイル内のサーバー名（デフォルトは「google-calendar」）
    */
-  constructor(baseUrl: string, apiKey?: string) {
-    super(baseUrl, apiKey);
+  constructor(
+    baseUrl?: string, 
+    apiKey?: string,
+    useMCP: boolean = true,
+    mcpConfigPath?: string,
+    mcpServerName: string = 'google-calendar'
+  ) {
+    super(baseUrl, apiKey, useMCP, mcpConfigPath, mcpServerName);
   }
   
   /**
@@ -35,6 +44,77 @@ Google Calendarを管理するサービスです。以下の機能がありま�
 
 日付や時間、予定タイトルなどを指定して予定を管理できます。
     `.trim();
+  }
+  
+  /**
+   * Google Calendarの利用可能なツールのモックを返す
+   * Claude Code MCPでは動的なツール一覧取得ができないため、代替手段として静的なリストを提供
+   */
+  protected getMockAvailableTools(): Array<{
+    name: string;
+    description: string;
+    parameters: Record<string, any>;
+  }> {
+    return [
+      {
+        name: 'list_events',
+        description: '指定した日時範囲内のカレンダーイベントを一覧表示します',
+        parameters: {
+          timeMin: '開始日時（ISO8601形式）',
+          timeMax: '終了日時（ISO8601形式）',
+          maxResults: '最大結果数（オプション）',
+          singleEvents: '繰り返しイベントを単一に展開するか（オプション）',
+          orderBy: '並び順（オプション）'
+        }
+      },
+      {
+        name: 'get_event',
+        description: '指定したIDのカレンダーイベントの詳細を取得します',
+        parameters: {
+          eventId: 'イベントID'
+        }
+      },
+      {
+        name: 'create_event',
+        description: '新しいカレンダーイベントを作成します',
+        parameters: {
+          summary: 'イベントのタイトル',
+          start: '開始日時（dateTimeプロパティ付きのオブジェクト）',
+          end: '終了日時（dateTimeプロパティ付きのオブジェクト）',
+          description: 'イベントの説明（オプション）',
+          location: '場所（オプション）'
+        }
+      },
+      {
+        name: 'update_event',
+        description: '既存のカレンダーイベントを更新します',
+        parameters: {
+          eventId: '更新するイベントのID',
+          summary: 'イベントのタイトル（オプション）',
+          start: '開始日時（dateTimeプロパティ付きのオブジェクト、オプション）',
+          end: '終了日時（dateTimeプロパティ付きのオブジェクト、オプション）',
+          description: 'イベントの説明（オプション）',
+          location: '場所（オプション）'
+        }
+      },
+      {
+        name: 'delete_event',
+        description: '指定したIDのカレンダーイベントを削除します',
+        parameters: {
+          eventId: '削除するイベントのID'
+        }
+      },
+      {
+        name: 'search_events',
+        description: '検索クエリに基づいてカレンダーイベントを検索します',
+        parameters: {
+          q: '検索クエリ（イベントタイトルなど）',
+          timeMin: '検索開始日時（ISO8601形式、オプション）',
+          timeMax: '検索終了日時（ISO8601形式、オプション）',
+          maxResults: '最大結果数（オプション）'
+        }
+      }
+    ];
   }
   
   // === 便利メソッド: デフォルトパラメータを設定して、よく使う操作を簡単に呼び出せるようにする ===

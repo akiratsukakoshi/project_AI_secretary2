@@ -1,0 +1,11 @@
+--- /dev/null
++++ /dev/null
+@@ -656,6 +674,8 @@
+     let tasksToCreate;
+     try {
+       tasksToCreate = safeParseAndValidate(llmResponse.content);
++      // 追加のエスケープ処理 - 安全対策
++      tasksToCreate = deepEscapeTemplateVariables(tasksToCreate);
+     } catch (error) {
+       logger.error('定期タスク生成のレスポンス処理中にエラー:', error);
+       return {

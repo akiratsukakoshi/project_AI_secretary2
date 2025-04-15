@@ -9,6 +9,16 @@ interface EnvironmentVariables {
   OPENAI_API_KEY: string;
   NODE_ENV: 'development' | 'production' | 'test';
   LOG_LEVEL?: string;
+  GOOGLE_CALENDAR_MCP_URL?: string;
+  GOOGLE_CALENDAR_MCP_API_KEY?: string;
+  NOTION_MCP_URL?: string;
+  NOTION_MCP_API_KEY?: string;
+  MCP_CONFIG_PATH?: string;
+  LOG_MAX_SIZE?: string;
+  LOG_MAX_FILES?: string;
+  LOG_DIRECTORY?: string;
+  LOG_DEBUG_TO_FILE?: string;
+  LOG_TRACE_TO_FILE?: string;
 }
 
 // 環境変数のバリデーション
@@ -29,6 +39,16 @@ const validateEnv = (): EnvironmentVariables => {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
     NODE_ENV: (process.env.NODE_ENV as EnvironmentVariables['NODE_ENV']) || 'development',
     LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+    GOOGLE_CALENDAR_MCP_URL: process.env.GOOGLE_CALENDAR_MCP_URL,
+    GOOGLE_CALENDAR_MCP_API_KEY: process.env.GOOGLE_CALENDAR_MCP_API_KEY,
+    NOTION_MCP_URL: process.env.NOTION_MCP_URL,
+    NOTION_MCP_API_KEY: process.env.NOTION_MCP_API_KEY,
+    MCP_CONFIG_PATH: process.env.MCP_CONFIG_PATH || '/home/tukapontas/ai-secretary2/mcp-config.json',
+    LOG_MAX_SIZE: process.env.LOG_MAX_SIZE,
+    LOG_MAX_FILES: process.env.LOG_MAX_FILES,
+    LOG_DIRECTORY: process.env.LOG_DIRECTORY,
+    LOG_DEBUG_TO_FILE: process.env.LOG_DEBUG_TO_FILE,
+    LOG_TRACE_TO_FILE: process.env.LOG_TRACE_TO_FILE,
   };
 };
 

@@ -10,7 +10,7 @@ export { default as workflowRegistry } from './core/workflow-registry';
 export { default as stateManager } from './core/state-manager';
 
 // サービスコネクターインターフェースのエクスポート
-export * from './core/service-connector.interface';
+export { ServiceConnector, McpServiceConnector, ApiServiceConnector, ServiceResponse } from './core/service-connector.interface';
 
 // LLM関連のエクスポート
 export { LLMClient, OpenAIClient } from './llm/llm-client';
@@ -25,6 +25,8 @@ export { MCPConnectorBase } from './connectors/mcp/mcp-connector-base';
 export { GoogleCalendarMCPConnector } from './connectors/mcp/google-calendar-mcp';
 export { NotionMCPConnector } from './connectors/mcp/notion-mcp';
 
-// 今後、特定のワークフローもここからエクスポートする
-// 例: export { calendarWorkflow } from './calendar/calendar-workflow';
-// 例: export { taskWorkflow } from './tasks/task-workflow';
+// ワークフローのエクスポート
+export { calendarWorkflow } from './calendar/calendar-workflow';
+export { taskWorkflow } from './tasks/task-workflow';
+export { reminderService, initializeReminderService } from './tasks/reminder-service';
+export { NameResolver } from './tasks/name-resolver';

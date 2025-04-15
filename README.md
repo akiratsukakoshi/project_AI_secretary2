@@ -1,6 +1,6 @@
 # AI Secretary 2 - gaku-co (ガクコ)
 
-Discord をインターフェースとした次世代AI秘書「gaku-co（ガクコ）」プロジェクトです。生成AIを頭脳として、RAG（検索拡張生成）とモジュール化されたワークフローを活用し、自然言語でのコミュニケーションを通じて様々な業務をサポートします。
+Discordをインターフェースとした次世代AI秘書「gaku-co（ガクコ）」プロジェクトです。生成AIを頭脳として、RAG（検索拡張生成）とモジュール化されたワークフローを活用し、自然言語でのコミュニケーションを通じて様々な業務をサポートします。
 
 ## 主要機能
 
@@ -29,12 +29,12 @@ Discord をインターフェースとした次世代AI秘書「gaku-co（ガク
 ## システムアーキテクチャ
 
 ```
-ユーザー (Discord) → Discord Bot → ワークフローマネージャー → 応答 → ユーザー (Discord)
+ユーザー (Discord) → Discord Bot → ワークフローマネージャー → LLMツール選択 → 応答 → ユーザー (Discord)
                                     ↓
                       ┌─────────────┴───────────────┐
                       ↓                             ↓
                   RAG検索                      外部サービス連携
-                (Supabase pgvector)         (LLM + MCPコネクタ)
+                (Supabase pgvector)         (常駐型MCPサーバー)
 ```
 
 ### コアコンポーネント
@@ -46,16 +46,37 @@ Discord をインターフェースとした次世代AI秘書「gaku-co（ガク
 2. **ワークフローモジュール**
    - ユーザーのインテントを認識し適切なワークフローを実行
    - LLMによるツール選択とパラメータ抽出
-   - MCPコネクタを通じた外部サービスとの統合
+   - サービスコネクタを通じた外部サービスとの統合
 
 3. **RAGシステム**
    - OpenAI埋め込みによるベクトル検索
    - ハイブリッドリトリーバル（ベクトル検索+キーワード検索）
    - Supabase pgvectorによるスケーラブルな検索基盤
 
-4. **メモリ管理**
-   - 複数ターンにわたる会話コンテキストの維持
-   - インメモリキャッシュとDB永続化のハイブリッド方式
+4. **常駐型MCPサーバー**
+   - ExpressベースのHTTP APIサーバー
+   - PM2によるプロセス管理・監視
+   - API/MCPのハイブリッドコネクタ設計
+
+## 最新の実装: 常駐型MCPサーバーアーキテクチャ
+
+従来の一時的なプロセス起動からAPIサーバー方式への移行により、パフォーマンスと安定性が大幅に向上しました。
+
+### 主な利点
+
+- **起動オーバーヘッドの排除**: サーバーの常駐化により応答性が向上
+- **タイムアウト問題の解消**: 長時間実行されるOperationsでも安定動作
+- **並列処理能力の向上**: 複数リクエストの同時処理が可能に
+- **監視・管理の容易化**: PM2による包括的なプロセス管理
+
+### 実装詳細
+
+- **`notion-mcp` サーバー**: Notion APIとの連携用APIサーバー（ポート3001）
+- **ハイブリッドコネクタ**: API優先＋MCPフォールバックの柔軟な設計
+- **PM2による管理**: 自動再起動、ログ管理、モニタリング機能
+- **テンプレート構文対策**: LLM連携における安全性強化
+
+詳細は [MCP常駐型APIサーバーアーキテクチャ](docs/mcp-architecture.md) を参照してください。
 
 ## セットアップ方法
 
@@ -83,15 +104,24 @@ OPENAI_API_KEY=your_openai_key
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
 
+# Notion MCP設定
+NOTION_TOKEN=your_notion_token
+NOTION_VERSION=2022-06-28
+NOTION_TASK_DB_ID=your_task_database_id
+NOTION_STAFF_DB_ID=your_staff_database_id
+NOTION_CATEGORY_DB_ID=your_category_database_id
+
 # その他連携設定
-GOOGLE_CALENDAR_MCP_URL=your_calendar_mcp_url (オプション)
-NOTION_MCP_URL=your_notion_mcp_url (オプション)
+GOOGLE_CALENDAR_ID=your_calendar_id
 ```
 
 4. **ビルドと実行**
 ```bash
 # TypeScriptのビルド
 npm run build
+
+# MCPサーバーの起動
+./scripts/start-mcp-servers.sh
 
 # アプリケーションの実行
 npm start
@@ -108,13 +138,22 @@ npm run dev
   - ワークフローモジュール基本設計
   - LLM連携の基本実装
 
-- 🔄 **フェーズ2: LLM-MCP連携の実装**（進行中）
+- ✅ **フェーズ2: MCPサーバー連携** (完了)
   - LLMによるツール選択
-  - MCPサーバーとの連携
-  - プロンプトテンプレート管理
+  - 常駐型MCPサーバーアーキテクチャに移行
+  - Notion MCPサーバーの実装
+  - テンプレート構文対策の実装
 
-- 📋 **フェーズ3-6: 今後の予定**
-  - Google Calendar/Notion連携
+- ✅ **フェーズ3: タスク管理ワークフロー** (完了)
+  - Notionタスク管理の実装
+  - LLMを活用したパラメータ抽出
+  - セキュアなワークフロー実行
+
+- 🔄 **フェーズ4: Google Calendarワークフロー** (進行中)
+  - 基本的なカレンダーワークフローの設計
+  - Google Calendar MCPサーバーの準備中
+
+- 📋 **フェーズ5-6: 今後の予定**
   - RAGシステムの完全実装
   - リマインダー機能の実装
   - UI/UX最適化
@@ -124,9 +163,11 @@ npm run dev
 
 プロジェクトの詳細な技術情報と実装計画については以下のドキュメントを参照してください：
 
-- [gaku-co要件定義書](docs/gakuco-requirements.md)
-- [RAG構築要件](docs/RAG構築にあたって確認すべき項目.md)
-- [ワークフロー設計](docs/ワークフローモジュール開発要件と実装計画v2.0.md)
+- [gaku-co要件定義書](docs/gakuco-requirements.md) - プロジェクトの要件と概要
+- [RAG実装ガイド](docs/RAG実装のための技術メモ.md) - RAGシステムの技術詳細
+- [ワークフロー実装ガイド](docs/workflow-module-implementation.md) - ワークフローモジュールの設計と実装
+- [MCP常駐型APIサーバーアーキテクチャ](docs/mcp-architecture.md) - 常駐型MCPサーバーの詳細設計
+- [PM2セットアップガイド](docs/pm2-setup-guide.md) - PM2によるプロセス管理の設定
 
 ## コントリビューション
 

@@ -27,6 +27,9 @@ export interface WorkflowResult {
   requireFollowUp?: boolean; // マルチターン対話のフラグ
 }
 
+// ServiceResponse型はservice-connector.interfaceから再エクスポートするため
+// ここでは定義しません
+
 /**
  * ワークフロー実行コンテキスト
  * v2.0: serviceConnectors を追加
