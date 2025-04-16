@@ -1,0 +1,9 @@
+{
+  "title": "システム設定サンプル",
+  "content": "これはJSONフォーマットのサンプルコンテンツです。\nRAGシステムのテスト用に使用します。",
+  "source_type": "system_info",
+  "metadata": {
+    "version": "1.0",
+    "updated_at": "2025-04-16"
+  }
+}
