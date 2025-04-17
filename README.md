@@ -168,6 +168,7 @@ npm run dev
 - [ワークフロー実装ガイド](docs/workflow-module-implementation.md) - ワークフローモジュールの設計と実装
 - [MCP常駐型APIサーバーアーキテクチャ](docs/mcp-architecture.md) - 常駐型MCPサーバーの詳細設計
 - [PM2セットアップガイド](docs/pm2-setup-guide.md) - PM2によるプロセス管理の設定
+- [RAGアップローダー利用ガイド](docs/pm2-setup-guide.md) - supabaseRAGへのドキュメントアップツール
 
 ## コントリビューション
 

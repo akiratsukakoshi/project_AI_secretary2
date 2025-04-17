@@ -1,218 +1,388 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
-    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var supabase_1 = require("../../config/supabase");
-var dotenv = require("dotenv");
+const supabase_1 = __importDefault(require("../../config/supabase"));
+const dotenv = __importStar(require("dotenv"));
+const uuid_1 = require("uuid");
+const openaiEmbeddings_1 = __importDefault(require("../openaiEmbeddings"));
 // 環境変数をロード
 dotenv.config();
 /**
  * RAGサービス - Supabase連携
  * ベクトル検索とRAG関連のデータアクセスを処理する
  */
-var RAGService = /** @class */ (function () {
-    function RAGService() {
-    }
+class RAGService {
     /**
      * チャンクをバッチでSupabaseに保存
      * @param chunks 保存するチャンクの配列
      * @returns 成功したか
      */
-    RAGService.prototype.saveChunks = function (chunks) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _i, chunks_1, chunk, error, error_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!chunks || chunks.length === 0) {
-                            console.warn('保存するチャンクがありません');
-                            return [2 /*return*/, true];
-                        }
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 6, , 7]);
-                        _i = 0, chunks_1 = chunks;
-                        _a.label = 2;
-                    case 2:
-                        if (!(_i < chunks_1.length)) return [3 /*break*/, 5];
-                        chunk = chunks_1[_i];
-                        return [4 /*yield*/, supabase_1.default
-                                .from('chunks')
-                                .insert({
-                                id: chunk.id,
-                                document_id: chunk.document_id,
-                                content: chunk.content,
-                                // 埋め込みは一時的に省略
-                                // embedding: chunk.embedding,
-                                metadata: chunk.metadata || {},
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString()
-                            })];
-                    case 3:
-                        error = (_a.sent()).error;
-                        if (error) {
-                            console.error('チャンク保存エラー:', error);
-                            // 個別のエラーでは全体を失敗としない（より堅牢な実装）
-                            console.warn("\u30C1\u30E3\u30F3\u30AF\u4FDD\u5B58\u5931\u6557: document_id=".concat(chunk.document_id));
-                        }
-                        _a.label = 4;
-                    case 4:
-                        _i++;
-                        return [3 /*break*/, 2];
-                    case 5: return [2 /*return*/, true];
-                    case 6:
-                        error_1 = _a.sent();
-                        console.error('チャンクのバッチ保存エラー:', error_1);
-                        throw new Error('チャンクのバッチ保存に失敗しました');
-                    case 7: return [2 /*return*/];
+    async saveChunks(chunks) {
+        if (!chunks || chunks.length === 0) {
+            console.warn('保存するチャンクがありません');
+            return true;
+        }
+        try {
+            console.log(`${chunks.length}個のチャンクに埋め込みを生成して保存します...`);
+            // チャンクの内容から埋め込みを生成
+            const chunkContents = chunks.map(chunk => chunk.content);
+            const embeddings = await openaiEmbeddings_1.default.generateEmbeddings(chunkContents);
+            // 埋め込みをチャンクに追加
+            for (let i = 0; i < chunks.length; i++) {
+                chunks[i].embedding = embeddings[i];
+            }
+            // チャンクをバッチで挿入
+            // 注意: 実際のエラーを見ながら実装方法を調整できる
+            for (const chunk of chunks) {
+                const { error } = await supabase_1.default
+                    .from('chunks')
+                    .insert({
+                    id: chunk.id,
+                    document_id: chunk.document_id,
+                    content: chunk.content,
+                    embedding: chunk.embedding,
+                    metadata: chunk.metadata || {},
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+                if (error) {
+                    console.error('チャンク保存エラー:', error);
+                    // 個別のエラーでは全体を失敗としない（より堅牢な実装）
+                    console.warn(`チャンク保存失敗: document_id=${chunk.document_id}`);
                 }
-            });
-        });
-    };
+            }
+            console.log(`${chunks.length}個のチャンクの埋め込み生成と保存が完了しました`);
+            return true;
+        }
+        catch (error) {
+            console.error('チャンクのバッチ保存エラー:', error);
+            throw new Error('チャンクのバッチ保存に失敗しました');
+        }
+    }
     /**
      * 検索クエリを実行する（単純なキーワード検索）
      * @param query 検索クエリ
      * @returns 検索結果の配列
      */
-    RAGService.prototype.search = function (query) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _a, data, error, error_2;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, supabase_1.default
-                                .from('chunks')
-                                .select("\n          id,\n          content,\n          metadata,\n          document_id,\n          documents:document_id (\n            id,\n            title,\n            source_type,\n            source_id\n          )\n        ")
-                                .ilike('content', "%".concat(query.query, "%"))
-                                .limit(query.limit || 5)];
-                    case 1:
-                        _a = _b.sent(), data = _a.data, error = _a.error;
-                        if (error) {
-                            console.error('検索エラー:', error);
-                            throw error;
-                        }
-                        // 検索結果がない場合は空配列を返す
-                        if (!data || data.length === 0) {
-                            return [2 /*return*/, []];
-                        }
-                        // 検索結果を整形
-                        return [2 /*return*/, data.map(function (item) {
-                                var _a, _b;
-                                return ({
-                                    content: item.content,
-                                    metadata: item.metadata,
-                                    similarity: 1.0, // 仮の類似度
-                                    source_type: (_a = item.documents) === null || _a === void 0 ? void 0 : _a.source_type,
-                                    source_id: (_b = item.documents) === null || _b === void 0 ? void 0 : _b.source_id
-                                });
-                            })];
-                    case 2:
-                        error_2 = _b.sent();
-                        console.error('検索エラー:', error_2);
-                        throw new Error('検索中にエラーが発生しました');
-                    case 3: return [2 /*return*/];
+    async search(query) {
+        try {
+            // シンプルなキーワード検索（埋め込みベクトル検索の代替）
+            // textSearchは使用せず、ILIKEで簡易検索
+            const { data, error } = await supabase_1.default
+                .from('chunks')
+                .select(`
+          id,
+          content,
+          metadata,
+          document_id,
+          documents:document_id (
+            id,
+            title,
+            source_type,
+            source_id
+          )
+        `)
+                .ilike('content', `%${query.query}%`)
+                .limit(query.limit || 5);
+            if (error) {
+                console.error('検索エラー:', error);
+                throw error;
+            }
+            // 検索結果がない場合は空配列を返す
+            if (!data || data.length === 0) {
+                return [];
+            }
+            // 検索結果を整形
+            return data.map(item => {
+                // ドキュメント情報からソースタイプとソースIDを取得
+                // itemとdocumentsの存在確認をしっかり行う
+                let sourceType = undefined;
+                let sourceId = undefined;
+                if (item && item.documents) {
+                    const docs = item.documents;
+                    if (docs) {
+                        sourceType = docs.source_type;
+                        sourceId = docs.source_id;
+                    }
                 }
+                return {
+                    content: item.content,
+                    metadata: item.metadata,
+                    similarity: 1.0, // 仮の類似度
+                    source_type: sourceType,
+                    source_id: sourceId
+                };
             });
-        });
-    };
+        }
+        catch (error) {
+            console.error('検索エラー:', error);
+            throw new Error('検索中にエラーが発生しました');
+        }
+    }
     /**
      * ドキュメントIDに基づいてチャンクを取得
      * @param documentId ドキュメントID
      * @returns チャンクの配列
      */
-    RAGService.prototype.getChunksByDocumentId = function (documentId) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _a, data, error, error_3;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, supabase_1.default
-                                .from('chunks')
-                                .select('*')
-                                .eq('document_id', documentId)];
-                    case 1:
-                        _a = _b.sent(), data = _a.data, error = _a.error;
-                        if (error) {
-                            throw error;
-                        }
-                        return [2 /*return*/, data || []];
-                    case 2:
-                        error_3 = _b.sent();
-                        console.error("\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8 ".concat(documentId, " \u306E\u30C1\u30E3\u30F3\u30AF\u53D6\u5F97\u30A8\u30E9\u30FC:"), error_3);
-                        throw new Error('チャンクの取得に失敗しました');
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
+    async getChunksByDocumentId(documentId) {
+        try {
+            const { data, error } = await supabase_1.default
+                .from('chunks')
+                .select('*')
+                .eq('document_id', documentId);
+            if (error) {
+                throw error;
+            }
+            return data || [];
+        }
+        catch (error) {
+            console.error(`ドキュメント ${documentId} のチャンク取得エラー:`, error);
+            throw new Error('チャンクの取得に失敗しました');
+        }
+    }
     /**
      * ドキュメントIDに基づいてチャンクを削除
      * @param documentId ドキュメントID
      * @returns 削除が成功したかどうか
      */
-    RAGService.prototype.deleteChunksByDocumentId = function (documentId) {
-        return __awaiter(this, void 0, void 0, function () {
-            var error, error_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, supabase_1.default
-                                .from('chunks')
-                                .delete()
-                                .eq('document_id', documentId)];
-                    case 1:
-                        error = (_a.sent()).error;
-                        if (error) {
-                            throw error;
-                        }
-                        return [2 /*return*/, true];
-                    case 2:
-                        error_4 = _a.sent();
-                        console.error("\u30C9\u30AD\u30E5\u30E1\u30F3\u30C8 ".concat(documentId, " \u306E\u30C1\u30E3\u30F3\u30AF\u524A\u9664\u30A8\u30E9\u30FC:"), error_4);
-                        return [2 /*return*/, false];
-                    case 3: return [2 /*return*/];
+    async deleteChunksByDocumentId(documentId) {
+        try {
+            const { error } = await supabase_1.default
+                .from('chunks')
+                .delete()
+                .eq('document_id', documentId);
+            if (error) {
+                throw error;
+            }
+            return true;
+        }
+        catch (error) {
+            console.error(`ドキュメント ${documentId} のチャンク削除エラー:`, error);
+            return false;
+        }
+    }
+    /**
+     * ドキュメントを保存
+     * @param document 保存するドキュメント
+     * @returns 生成されたドキュメントID
+     */
+    async saveDocument(document) {
+        try {
+            // document.idがない場合はUUIDを生成
+            const docId = document.id || (0, uuid_1.v4)();
+            // ドキュメント情報をSupabaseに保存
+            const { data, error } = await supabase_1.default
+                .from('documents')
+                .insert({
+                id: docId,
+                title: document.title,
+                content: document.content,
+                source_type: document.source_type,
+                source_id: document.source_id,
+                metadata: document.metadata || {},
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+                .select('id')
+                .single();
+            if (error) {
+                console.error('ドキュメント保存エラー:', error);
+                throw error;
+            }
+            return docId;
+        }
+        catch (error) {
+            console.error('ドキュメント保存エラー:', error);
+            throw new Error('ドキュメントの保存に失敗しました');
+        }
+    }
+    /**
+     * チャンクを保存
+     * @param chunk 保存するチャンク
+     * @returns 生成されたチャンクID
+     */
+    async saveChunk(chunk) {
+        try {
+            // チャンクIDを設定
+            const chunkId = chunk.id || (0, uuid_1.v4)();
+            // 埋め込みがない場合は生成
+            if (!chunk.embedding) {
+                console.log('チャンクの埋め込みを生成しています...');
+                chunk.embedding = await openaiEmbeddings_1.default.generateEmbedding(chunk.content);
+            }
+            // チャンク情報をSupabaseに保存
+            const { data, error } = await supabase_1.default
+                .from('chunks')
+                .insert({
+                id: chunkId,
+                document_id: chunk.document_id,
+                content: chunk.content,
+                embedding: chunk.embedding,
+                metadata: chunk.metadata || {},
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+                .select('id')
+                .single();
+            if (error) {
+                console.error('チャンク保存エラー:', error);
+                throw error;
+            }
+            return chunkId;
+        }
+        catch (error) {
+            console.error('チャンク保存エラー:', error);
+            throw new Error('チャンクの保存に失敗しました');
+        }
+    }
+    /**
+     * ドキュメントを削除（関連するチャンクも削除）
+     * @param documentId 削除するドキュメントID
+     * @returns 削除が成功したかどうか
+     */
+    async deleteDocument(documentId) {
+        try {
+            // まず関連するチャンクを削除
+            await this.deleteChunksByDocumentId(documentId);
+            // ドキュメントを削除
+            const { error } = await supabase_1.default
+                .from('documents')
+                .delete()
+                .eq('id', documentId);
+            if (error) {
+                throw error;
+            }
+            return true;
+        }
+        catch (error) {
+            console.error(`ドキュメント ${documentId} 削除エラー:`, error);
+            return false;
+        }
+    }
+    /**
+     * 必要なテーブルが存在することを確認（初期化）
+     * @returns 初期化が成功したかどうか
+     */
+    async initializeTables() {
+        try {
+            // テーブルが存在するか確認するだけのシンプルなクエリ
+            const { data: docData, error: docError } = await supabase_1.default
+                .from('documents')
+                .select('id')
+                .limit(1);
+            const { data: chunkData, error: chunkError } = await supabase_1.default
+                .from('chunks')
+                .select('id')
+                .limit(1);
+            // エラーがあれば、テーブルが存在しない可能性
+            if (docError || chunkError) {
+                console.warn('テーブル確認エラー、テーブルが存在しない可能性があります:', { docError, chunkError });
+                return false;
+            }
+            console.log('RAGテーブルの初期化確認が完了しました');
+            return true;
+        }
+        catch (error) {
+            console.error('テーブル初期化エラー:', error);
+            return false;
+        }
+    }
+    /**
+     * 埋め込みベクトルが欠落しているチャンクを修復する
+     * @param batchSize 一度に処理するチャンク数
+     * @param limit 処理する最大チャンク数（任意）
+     * @returns 修復したチャンク数
+     */
+    async rebuildEmbeddings(batchSize = 10, limit) {
+        try {
+            console.log('埋め込みベクトルが欠落しているチャンクを検索しています...');
+            // embeddingがnullのチャンクを検索
+            const { data, error } = await supabase_1.default
+                .from('chunks')
+                .select('id, content')
+                .is('embedding', null)
+                .order('created_at', { ascending: false })
+                .limit(limit || 1000);
+            if (error) {
+                console.error('埋め込み欠落チャンク検索エラー:', error);
+                throw error;
+            }
+            if (!data || data.length === 0) {
+                console.log('埋め込みベクトルが欠落しているチャンクはありません');
+                return 0;
+            }
+            console.log(`${data.length}個の埋め込み欠落チャンクを検出しました`);
+            // バッチ処理のための準備
+            const chunks = data;
+            let processedCount = 0;
+            // バッチ処理を実行
+            for (let i = 0; i < chunks.length; i += batchSize) {
+                const batch = chunks.slice(i, i + batchSize);
+                console.log(`バッチ処理中: ${i + 1}～${Math.min(i + batchSize, chunks.length)}/${chunks.length}`);
+                // バッチ内のコンテンツから埋め込みを生成
+                const contents = batch.map(chunk => chunk.content);
+                const embeddings = await openaiEmbeddings_1.default.generateEmbeddings(contents);
+                // 各チャンクを更新
+                for (let j = 0; j < batch.length; j++) {
+                    const { error: updateError } = await supabase_1.default
+                        .from('chunks')
+                        .update({
+                        embedding: embeddings[j],
+                        updated_at: new Date().toISOString()
+                    })
+                        .eq('id', batch[j].id);
+                    if (updateError) {
+                        console.error(`チャンク ${batch[j].id} の埋め込み更新エラー:`, updateError);
+                    }
+                    else {
+                        processedCount++;
+                    }
                 }
-            });
-        });
-    };
-    return RAGService;
-}());
+                console.log(`進捗: ${processedCount}/${chunks.length} (${Math.round(processedCount / chunks.length * 100)}%)`);
+            }
+            console.log(`${processedCount}個のチャンクの埋め込みを再構築しました`);
+            return processedCount;
+        }
+        catch (error) {
+            console.error('埋め込み再構築エラー:', error);
+            throw new Error('埋め込みの再構築中にエラーが発生しました');
+        }
+    }
+}
 // シングルトンインスタンスをエクスポート
 exports.default = new RAGService();

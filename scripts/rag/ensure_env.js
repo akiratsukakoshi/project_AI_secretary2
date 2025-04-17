@@ -1,36 +1,29 @@
-// ensure_env.js
-// このスクリプトは環境変数が正しくロードされていることを確認します
-const dotenv = require('dotenv');
-const path = require('path');
+/**
+ * 環境変数確認ユーティリティ
+ * スクリプト実行前に環境変数が設定されているか確認する
+ */
 
-// プロジェクトルートディレクトリのパス
-const rootDir = path.resolve(__dirname, '../../');
-const envPath = path.resolve(rootDir, '.env');
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
-console.log('Loading environment variables from:', envPath);
-
-// 環境変数をロード
-const result = dotenv.config({ path: envPath });
-
-if (result.error) {
-  console.error('環境変数のロードに失敗しました:', result.error);
-} else {
-  console.log('Environment variables loaded successfully');
+// APIキーが設定されているか確認
+if (!process.env.OPENAI_API_KEY) {
+  console.error('エラー: OPENAI_API_KEY が設定されていません');
+  console.error('埋め込みベクトルの生成には OpenAI API キーが必要です');
+  console.error('.env ファイルに OPENAI_API_KEY を設定してください');
+  process.exit(1);
 }
 
-// 重要な環境変数が設定されているか確認
-const requiredVars = ['SUPABASE_URL', 'SUPABASE_KEY'];
-let missingVars = false;
-
-for (const varName of requiredVars) {
-  if (!process.env[varName]) {
-    console.error(`警告: 環境変数 ${varName} が設定されていません`);
-    missingVars = true;
-  }
+// Supabaseの設定が揃っているか確認
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+  console.error('エラー: SUPABASE_URL または SUPABASE_KEY が設定されていません');
+  console.error('データの保存には Supabase の設定が必要です');
+  console.error('.env ファイルに SUPABASE_URL と SUPABASE_KEY を設定してください');
+  process.exit(1);
 }
 
-if (!missingVars) {
-  console.log('すべての必須環境変数が設定されています');
+// 埋め込みモデルが設定されているか確認（デフォルト値がある場合はOK）
+if (!process.env.OPENAI_EMBEDDING_MODEL) {
+  console.log('注意: OPENAI_EMBEDDING_MODEL が設定されていないため、text-embedding-3-small を使用します');
 }
 
-// このスクリプト自体は何も行わず、環境変数がロードされたことを確認するだけです
+console.log('環境変数の確認が完了しました。スクリプトを実行します...');
