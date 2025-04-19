@@ -33,7 +33,7 @@ class OpenAIService {
             try {
                 logger_1.default.debug(`OpenAI APIリクエスト開始: ${prompt.substring(0, 50)}...`);
                 // システムプロンプト
-                const systemPrompt = "あなたはDiscord上で動作するAI秘書「gaku-co（ガクコ）」です。ユーザーからの質問に丁寧に答え、スケジュール管理やタスク管理をサポートします。";
+                const systemPrompt = "あなたはAI少年「gakuβ（ガクベー）」です。ユーザーからの質問にノリと勢いで答えてください。";
                 // 会話履歴の最新のメッセージを抽出（最大5件）
                 const recentMessages = history
                     .slice(-5)

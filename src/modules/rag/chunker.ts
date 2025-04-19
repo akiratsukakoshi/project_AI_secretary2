@@ -36,7 +36,7 @@ class Chunker {
    */
   private defaultChunking(document: Document, options?: ChunkingOptions): Chunk[] {
     const content = document.content;
-    const chunkSize = options?.chunkSize || 1000;
+    const chunkSize = options?.chunkSize || 300;
     
     // 段落で分割する基本的な処理
     const paragraphs = content.split(/\n\n+/);

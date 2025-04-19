@@ -14,16 +14,59 @@ class Retriever {
    */
   async search(query: string, filters?: Record<string, any>, limit?: number): Promise<SearchResult[]> {
     try {
+      console.log(`\n📣📣📣 Retriever.search() が呼び出されました 📣📣📣`);
+      console.log(`クエリ: "${query}"`);
+      console.log('フィルター:', JSON.stringify(filters));
+      console.log('取得上限:', limit || '未指定（デフォルト値使用）');
+      
       const searchQuery: SearchQuery = {
         query,
         filters,
         limit
       };
       
-      return await ragService.search(searchQuery);
+      console.log('🔄 ragService.search() を呼び出します...');
+      console.log('searchQuery:', JSON.stringify(searchQuery));
+      
+      // デバッグログ追加：ragService.search呼び出し直前
+      console.log('\n🔍🔍🔍 ragService.search() 呼び出し直前 🔍🔍🔍');
+      console.time('ragService.search実行時間');
+
+      // 呼び出し元情報を取得するためのスタックトレース
+      const stackTrace = new Error().stack;
+      console.log('呼び出し元スタック:', stackTrace);
+      
+      try {
+        const results = await ragService.search(searchQuery);
+        
+        // デバッグログ追加：ragService.search呼び出し直後
+        console.timeEnd('ragService.search実行時間');
+        console.log(`\n✅ ragService.search() が完了しました`);
+        console.log(`検索結果: ${results.length}件`);
+        
+        // 検索結果サンプル
+        if (results.length > 0) {
+          console.log('検索結果のサンプル:');
+          console.log(JSON.stringify(results[0]).substring(0, 200) + '...');
+        } else {
+          console.log('検索結果は0件でした');
+        }
+        
+        return results;
+      } catch (error) {
+        // デバッグログ追加：ragService.search呼び出しエラー
+        console.error('\n❌❌❌ ragService.search()でエラー発生');
+        console.error('エラータイプ:', typeof error);
+        console.error('エラーメッセージ:', error instanceof Error ? error.message : 'メッセージなし');
+        console.error('エラースタック:', error instanceof Error ? error.stack : 'スタックなし');
+        throw error; // 上位へエラーを再スロー
+      }
     } catch (error) {
-      console.error('検索エラー:', error);
-      throw new Error('ベクトル検索中にエラーが発生しました');
+      console.error('❌❌❌ 検索エラー:', error);
+      console.error('エラータイプ:', typeof error);
+      console.error('エラーメッセージ:', error instanceof Error ? error.message : 'メッセージなし');
+      console.error('エラースタック:', error instanceof Error ? error.stack : 'スタックなし');
+      throw new Error('ベクトル検索中にエラーが発生しました: ' + (error instanceof Error ? error.message : String(error)));
     }
   }
 

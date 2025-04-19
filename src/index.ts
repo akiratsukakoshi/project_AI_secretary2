@@ -144,8 +144,25 @@ client.on(Events.MessageCreate, async (message: Message) => {
       // ワークフローで処理できなかった場合、RAG処理へフォールバック
       logger.info('ワークフローでの処理なし、RAG処理へフォールバック');
       
+      // デバッグログ追加：RAG処理呼び出し前
+      console.log("\n🔍🔍🔍 discordRagIntegration.processMessage 呼び出し直前");
+      console.log("prompt:", prompt);
+      logger.debug("discordRagIntegration.processMessage 呼び出し直前");
+      
+      // 強制RAGモード（デバッグ用）
+      const enableForceRag = true; // デバッグ用フラグ
+      if (enableForceRag && (prompt.includes('記憶') || prompt.includes('会議') || prompt.includes('議事録') || prompt.includes('強制RAG'))) {
+        console.log('⚠️⚠️⚠️ 強制RAGモードが有効化されました（デバッグ用）');
+        prompt = "強制RAG " + prompt;
+      }
+      
       // DiscordBot-RAG統合モジュールでメッセージを処理
       const { response, usedRag } = await discordRagIntegration.processMessage(message, prompt);
+      
+      // デバッグログ追加：RAG処理呼び出し後
+      console.log("\n🔍🔍🔍 discordRagIntegration.processMessage 呼び出し完了");
+      console.log("usedRag:", usedRag);
+      logger.debug("discordRagIntegration.processMessage 呼び出し完了");
       
       // 「考え中...」メッセージを削除
       await typingMessage.delete();

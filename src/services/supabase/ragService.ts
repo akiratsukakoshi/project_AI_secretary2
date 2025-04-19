@@ -66,14 +66,128 @@ class RAGService {
   }
   
   /**
-   * 検索クエリを実行する（単純なキーワード検索）
+   * 検索クエリを実行する（ベクトル検索）
    * @param query 検索クエリ
    * @returns 検索結果の配列
    */
   async search(query: SearchQuery): Promise<SearchResult[]> {
+    console.log("\n\n=================================================================");
+    console.log("🔴🔴🔴 RAGService.search() が発動しました 🔴🔴🔴");
+    console.log("=================================================================\n\n");
+    console.log(`検索クエリ: "${query.query}"${query.filters ? ` (フィルター: ${JSON.stringify(query.filters)})` : ''}`)
+    
     try {
-      // シンプルなキーワード検索（埋め込みベクトル検索の代替）
-      // textSearchは使用せず、ILIKEで簡易検索
+      // クエリテキストの埋め込みを生成
+      console.log('検索クエリの埋め込みベクトルを生成中...')
+      const queryEmbedding = await openaiEmbeddings.generateEmbedding(query.query);
+      console.log('埋め込みベクトル生成完了:', queryEmbedding?.length || 0, '次元');
+      
+      // ベクトル検索のパラメータ
+      const threshold = 0.5; // 類似度閾値 0.7→0.5に下げて、より広い範囲の検索結果を取得
+      const limit = query.limit || 5; // 取得する結果数
+      
+      console.log('ベクトル検索を実行中...')
+      console.log('検索パラメータ:', { threshold, limit });
+      
+      try {
+        // RPC関数を使用したベクトル検索を実行
+        console.log('\n🚀🚀🚀 Supabase RPC "match_chunks" を呼び出します 🚀🚀🚀');
+        console.log('パラメータ:');
+        console.log('- query_embedding: [埋め込みベクトル]', queryEmbedding.length, '次元');
+        console.log('- match_threshold:', threshold);
+        console.log('- match_count:', limit);
+        
+        // 実行時間計測開始
+        const startTime = Date.now();
+        
+        const { data, error } = await supabase.rpc('match_chunks', {
+          query_embedding: queryEmbedding,
+          match_threshold: threshold,
+          match_count: limit
+        });
+        
+        // 実行時間計測終了
+        const endTime = Date.now();
+        const executionTime = endTime - startTime;
+        
+        console.log(`\n🚀 Supabase RPC 呼び出し完了（実行時間: ${executionTime}ms）`);
+        
+        if (error) {
+          console.error('❌ ベクトル検索エラー:', error);
+          console.error('エラーコード:', error.code);
+          console.error('エラーメッセージ:', error.message);
+          console.error('ヒント:', error.hint || 'なし');
+          console.error('詳細:', error.details || 'なし');
+          console.log('キーワード検索にフォールバック...');
+          return this.fallbackSearch(query);
+        }
+
+        console.log('Supabase RPC 呼び出し成功, 結果:', data ? `${data.length}件` : '0件');
+
+        // ベクトル検索結果のログ出力
+        if (data && data.length > 0) {
+          console.log("\n🔍 ベクトル検索結果:");
+          data.forEach((item: any, idx: number) => {
+            console.log(
+              `${idx + 1}. [${item.similarity?.toFixed(3)}] ${item.content?.slice(0, 40)}...`
+            );
+          });
+        }
+        
+        // 検索結果がない場合は空配列を返す
+        if (!data || data.length === 0) {
+          console.log('ベクトル検索で結果が見つかりませんでした');
+          return this.fallbackSearch(query);
+        }
+        
+        console.log(`ベクトル検索で ${data.length} 件の結果が見つかりました`);
+        
+        // 検索結果を整形
+        const results: SearchResult[] = [];
+        for (const item of data) {
+          // ドキュメント情報を取得
+          const { data: docData, error: docError } = await supabase
+            .from('documents')
+            .select('title, source_type, source_id')
+            .eq('id', item.document_id)
+            .single();
+          
+          if (docError) {
+            console.error('ドキュメント取得エラー:', docError);
+            continue;
+          }
+          
+          results.push({
+            content: item.content,
+            metadata: item.metadata,
+            similarity: item.similarity,
+            source_type: docData?.source_type,
+            source_id: docData?.source_id
+          });
+        }
+        
+        return results;
+      } catch (error) {
+        console.error('ベクトル検索実行エラー:', error);
+        console.log('キーワード検索にフォールバック...');
+        return this.fallbackSearch(query);
+      }
+    } catch (error) {
+      console.error('検索エラー:', error);
+      throw new Error('検索中にエラーが発生しました');
+    }
+  }
+  
+  /**
+   * フォールバック検索（キーワードベース）
+   * @param query 検索クエリ
+   * @returns 検索結果の配列
+   */
+  private async fallbackSearch(query: SearchQuery): Promise<SearchResult[]> {
+    try {
+      console.log('キーワード検索を実行中...');
+      
+      // シンプルなキーワード検索
       const { data, error } = await supabase
         .from('chunks')
         .select(`
@@ -92,14 +206,17 @@ class RAGService {
         .limit(query.limit || 5);
       
       if (error) {
-        console.error('検索エラー:', error);
+        console.error('キーワード検索エラー:', error);
         throw error;
       }
       
       // 検索結果がない場合は空配列を返す
       if (!data || data.length === 0) {
+        console.log('キーワード検索でも結果が見つかりませんでした');
         return [];
       }
+      
+      console.log(`キーワード検索で ${data.length} 件の結果が見つかりました`);
       
       // 検索結果を整形
       return data.map(item => {
@@ -119,13 +236,13 @@ class RAGService {
         return {
           content: item.content,
           metadata: item.metadata,
-          similarity: 1.0, // 仮の類似度
+          similarity: 1.0, // 仮の類似度（フォールバック）
           source_type: sourceType,
           source_id: sourceId
         };
       });
     } catch (error) {
-      console.error('検索エラー:', error);
+      console.error('フォールバック検索エラー:', error);
       throw new Error('検索中にエラーが発生しました');
     }
   }

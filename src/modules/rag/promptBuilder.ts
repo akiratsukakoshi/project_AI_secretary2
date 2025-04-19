@@ -72,26 +72,32 @@ class PromptBuilder {
   }
 
   /**
-   * ユーザークエリに基づいて検索を実行し、RAGプロンプトを構築
+   * 検索を実行してプロンプトを構築
    * @param query ユーザークエリ
    * @param filters 検索フィルター
    * @param userName ユーザー名
    * @returns システムプロンプトとユーザープロンプトの配列
    */
   async searchAndBuildPrompt(query: string, filters?: Record<string, any>, userName: string = 'ユーザー'): Promise<string[]> {
+    console.log(`🔍 promptBuilder.searchAndBuildPrompt() 発動: "${query.substring(0, 30)}..."`);
     try {
-      // 検索の実行
+      // 検索を実行
       const searchResults = await retriever.search(query, filters);
+      console.log(`検索結果取得成功: ${searchResults.length}件`);
       
-      // 検索結果のフィルタリング
-      const filteredResults = retriever.filterSearchResults(searchResults);
+      // 検索結果を使用してRAGプロンプトを構築
+      const ragPrompt = await this.buildRAGPrompt(query, searchResults, userName);
+      console.log('RAGプロンプト構築完了');
       
-      // RAGプロンプトの構築
-      return this.buildRAGPrompt(query, filteredResults, userName);
+      return ragPrompt;
     } catch (error) {
-      console.error('検索とプロンプト構築エラー:', error);
+      console.error('プロンプト構築エラー:', error);
+      
       // エラー時は基本プロンプトを返す
-      return this.buildBasicPrompt(query, userName);
+      return [
+        this.defaultSystemPrompt,
+        `質問：${query}\n\n残念ながら、検索中にエラーが発生したため、関連情報を取得できませんでした。一般的な知識に基づいて回答します。`
+      ];
     }
   }
 
