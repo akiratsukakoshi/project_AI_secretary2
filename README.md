@@ -164,6 +164,7 @@ npm run dev
 プロジェクトの詳細な技術情報と実装計画については以下のドキュメントを参照してください：
 
 - [gaku-co要件定義書](docs/gakuco-requirements.md) - プロジェクトの要件と概要
+- [ワークフローモジュール切り分け設定ガイド](docs/workflow-rag-guide.md) - RAG/ワークフローの切り替え設定ガイド
 - [RAG実装ガイド](docs/RAG実装のための技術メモ.md) - RAGシステムの技術詳細
 - [ワークフロー実装ガイド](docs/workflow-module-implementation.md) - ワークフローモジュールの設計と実装
 - [MCP常駐型APIサーバーアーキテクチャ](docs/mcp-architecture.md) - 常駐型MCPサーバーの詳細設計

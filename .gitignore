@@ -24,6 +24,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+.cursor
 
 # ログ
 logs/
