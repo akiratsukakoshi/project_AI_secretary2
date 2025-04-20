@@ -19,6 +19,158 @@ import logger from '../../src/utilities/logger';
 import ragService from '../../src/services/supabase/ragService';
 
 /**
+ * 拡張メタデータインターフェース
+ * RAG検索精度向上のための構造化されたメタデータ
+ */
+interface EnhancedMetadata {
+  title: string;           // チャンクの具体的なタイトル（必須）
+  summary: string;         // 内容の要約（必須）
+  tags: string[];          // 検索タグ（必須）
+  source_type: string;     // ソースタイプ（必須）
+  document_title: string;  // 元ドキュメントのタイトル
+  file_name: string;       // ファイル名（セキュリティ上の問題ない範囲で）
+  created_at: string;      // 作成日時
+}
+
+/**
+ * ファイル内容から要約テキストを生成
+ * @param content ファイル内容
+ * @param maxLength 最大文字数
+ */
+function generateSummary(content: string, maxLength: number = 300): string {
+  // 改行・空白の正規化
+  const normalizedContent = content.replace(/\s+/g, ' ').trim();
+  
+  // 最初のN文字を抽出
+  if (normalizedContent.length <= maxLength) {
+    return normalizedContent;
+  }
+  
+  // 文単位で区切って先頭から結合
+  const sentences = normalizedContent.match(/[^.!?]+[.!?]+/g) || [];
+  let summary = '';
+  
+  for (const sentence of sentences) {
+    if (summary.length + sentence.length <= maxLength) {
+      summary += sentence;
+    } else {
+      break;
+    }
+  }
+  
+  // 文単位で区切れない場合は単純に切る
+  if (!summary) {
+    summary = normalizedContent.substring(0, maxLength) + '...';
+  }
+  
+  return summary;
+}
+
+/**
+ * テキストからタグを推定または抽出
+ * @param content ファイル内容
+ * @param fileName ファイル名
+ * @param sourceType ソースタイプ
+ */
+function extractTags(content: string, fileName: string, sourceType: string): string[] {
+  const tags: Set<string> = new Set();
+  
+  // ソースタイプを基本タグとして追加
+  tags.add(sourceType);
+  
+  // ファイル名から推測
+  const fileNameWords = fileName.toLowerCase()
+    .replace(/[.-_]/g, ' ')
+    .split(' ')
+    .filter(word => word.length > 2);
+  
+  fileNameWords.forEach(word => tags.add(word));
+  
+  // 内容から頻出キーワード/特定パターンの抽出
+  // 例: 大学、会社、製品名、人名など特徴的な単語を抽出
+  const keywordPatterns = [
+    /大学|学校|教育|学習/g,
+    /会社|企業|組織/g,
+    /製品|サービス|技術/g,
+    /顧客|クライアント|ユーザー/g,
+    /会議|ミーティング|打ち合わせ/g
+  ];
+  
+  keywordPatterns.forEach(pattern => {
+    const matches = content.match(pattern);
+    if (matches) {
+      matches.forEach(match => tags.add(match));
+    }
+  });
+  
+  // 最大10個までに制限
+  return Array.from(tags).slice(0, 10);
+}
+
+/**
+ * 見出しからタイトルを抽出または生成
+ * @param content コンテンツ
+ * @param fileName ファイル名（フォールバック用）
+ */
+function extractTitle(content: string, fileName: string): string {
+  // Markdown見出しパターン
+  const headingMatch = content.match(/^#\s+(.+)$/m);
+  if (headingMatch && headingMatch[1]) {
+    return headingMatch[1].trim();
+  }
+  
+  // 最初の行が短い場合はタイトルとして使用
+  const firstLine = content.split('\n')[0].trim();
+  if (firstLine.length < 100 && firstLine.length > 3) {
+    return firstLine;
+  }
+  
+  // ファイル名を整形（拡張子を除去、_や-をスペースに変換、大文字化）
+  const formattedFileName = fileName
+    .replace(/\.[^/.]+$/, "") // 拡張子削除
+    .replace(/[-_]/g, " ")    // ハイフン、アンダースコアをスペースに
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+  
+  return formattedFileName;
+}
+
+/**
+ * 拡張されたメタデータを生成
+ */
+function createEnhancedMetadata(
+  content: string,
+  sourceType: string,
+  fileName: string,
+  existingMetadata: Record<string, any> = {}
+): EnhancedMetadata {
+  // タイトルの抽出または生成
+  const title = existingMetadata.title || extractTitle(content, fileName);
+  
+  // 要約の生成
+  const summary = existingMetadata.summary || generateSummary(content);
+  
+  // タグの抽出
+  const existingTags = Array.isArray(existingMetadata.tags) ? existingMetadata.tags : [];
+  const extractedTags = extractTags(content, fileName, sourceType);
+  const tags = [...new Set([...existingTags, ...extractedTags])];
+  
+  // ドキュメントタイトルの設定
+  const documentTitle = existingMetadata.document_title || title;
+  
+  return {
+    title,
+    summary,
+    tags,
+    source_type: sourceType,
+    document_title: documentTitle,
+    file_name: fileName,
+    created_at: existingMetadata.created_at || new Date().toISOString()
+  };
+}
+
+/**
  * アップロードオプション
  */
 interface UploadOptions {
@@ -117,10 +269,14 @@ async function uploadFolder(folderPath: string, sourceType: 'faq' | 'event' | 'c
 }
 
 /**
- * コンテンツタイプとメタデータの検出
+ * コンテンツタイプとメタデータの検出（拡張版）
  */
-function detectContentTypeAndMetadata(filePath: string, defaultSourceType: 'faq' | 'event' | 'customer' | 'meeting_note' | 'system_info'): { detectedSourceType: 'faq' | 'event' | 'customer' | 'meeting_note' | 'system_info', metadata: any } {
+function detectContentTypeAndMetadata(filePath: string, defaultSourceType: 'faq' | 'event' | 'customer' | 'meeting_note' | 'system_info'): { 
+  detectedSourceType: 'faq' | 'event' | 'customer' | 'meeting_note' | 'system_info', 
+  metadata: EnhancedMetadata 
+} {
   const fileExt = path.extname(filePath).toLowerCase();
+  const fileName = path.basename(filePath);
   
   // ファイル内容の読み込み
   let content: string;
@@ -128,20 +284,48 @@ function detectContentTypeAndMetadata(filePath: string, defaultSourceType: 'faq'
     content = fs.readFileSync(filePath, 'utf-8');
   } catch (error) {
     console.error(`ファイル読み込みエラー: ${filePath}`, error);
-    return { detectedSourceType: defaultSourceType, metadata: { file_path: filePath } };
+    // 最小限のメタデータで返す
+    return { 
+      detectedSourceType: defaultSourceType, 
+      metadata: {
+        title: fileName,
+        summary: `${fileName}の内容`,
+        tags: [defaultSourceType],
+        source_type: defaultSourceType,
+        document_title: fileName,
+        file_name: fileName,
+        created_at: new Date().toISOString()
+      } 
+    };
   }
   
   // JSONファイルの場合
   if (fileExt === '.json') {
     try {
       const jsonData = JSON.parse(content);
+      const sourceType = jsonData.source_type || defaultSourceType;
+      
+      // JSONから既存のメタデータを取り出す
+      const jsonMetadata = jsonData.metadata || {};
+      
+      // 拡張メタデータの生成（JSONデータを優先）
+      const enhancedMetadata = createEnhancedMetadata(
+        jsonData.content || content,
+        sourceType,
+        fileName,
+        {
+          ...jsonMetadata,
+          title: jsonData.title || jsonMetadata.title,
+          document_title: jsonData.title || jsonMetadata.document_title
+        }
+      );
+      
       return {
-        detectedSourceType: jsonData.source_type || defaultSourceType,
-        metadata: jsonData.metadata || { file_path: filePath }
+        detectedSourceType: sourceType as any,
+        metadata: enhancedMetadata
       };
     } catch (error) {
       console.error(`JSONパースエラー: ${filePath}`);
-      return { detectedSourceType: defaultSourceType, metadata: { file_path: filePath } };
     }
   }
   
@@ -150,34 +334,61 @@ function detectContentTypeAndMetadata(filePath: string, defaultSourceType: 'faq'
     const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
     const match = content.match(frontMatterRegex);
     
+    let frontMatterData = {};
+    let cleanContent = content;
+    
     if (match && match[1]) {
       try {
-        // YAMLっぽいフォーマットをパース
-        const frontMatter = parseYamlLike(match[1]);
-        return {
-          detectedSourceType: frontMatter.source_type || defaultSourceType,
-          metadata: { ...frontMatter, file_path: filePath }
-        };
+        // フロントマターをパース
+        frontMatterData = parseYamlLike(match[1]);
+        // フロントマターを除去したコンテンツ
+        cleanContent = content.replace(frontMatterRegex, '');
       } catch (error) {
         console.error(`Front Matterパースエラー: ${filePath}`);
       }
     }
+    
+    // ソースタイプの検出
+    const sourceType = (frontMatterData as any).source_type || defaultSourceType;
+    
+    // 拡張メタデータの生成
+    const enhancedMetadata = createEnhancedMetadata(
+      cleanContent,
+      sourceType,
+      fileName,
+      frontMatterData
+    );
+    
+    return {
+      detectedSourceType: sourceType as any,
+      metadata: enhancedMetadata
+    };
   }
   
   // パスからの推論
   const pathParts = filePath.toLowerCase().split('/');
+  let inferredSourceType = defaultSourceType;
   
   // フォルダ名に基づく推論
   for (const part of pathParts) {
-    if (part === 'faqs' || part === 'faq') return { detectedSourceType: 'faq', metadata: { file_path: filePath } };
-    if (part === 'events' || part === 'event') return { detectedSourceType: 'event', metadata: { file_path: filePath } };
-    if (part === 'customers' || part === 'customer') return { detectedSourceType: 'customer', metadata: { file_path: filePath } };
-    if (part === 'meetings' || part === 'meeting_note') return { detectedSourceType: 'meeting_note', metadata: { file_path: filePath } };
-    if (part === 'system' || part === 'system_info') return { detectedSourceType: 'system_info', metadata: { file_path: filePath } };
+    if (part === 'faqs' || part === 'faq') inferredSourceType = 'faq';
+    if (part === 'events' || part === 'event') inferredSourceType = 'event';
+    if (part === 'customers' || part === 'customer') inferredSourceType = 'customer';
+    if (part === 'meetings' || part === 'meeting_note') inferredSourceType = 'meeting_note';
+    if (part === 'system' || part === 'system_info') inferredSourceType = 'system_info';
   }
   
-  // デフォルト値を返す
-  return { detectedSourceType: defaultSourceType, metadata: { file_path: filePath } };
+  // 拡張メタデータの生成
+  const enhancedMetadata = createEnhancedMetadata(
+    content,
+    inferredSourceType,
+    fileName
+  );
+  
+  return { 
+    detectedSourceType: inferredSourceType, 
+    metadata: enhancedMetadata 
+  };
 }
 
 /**
@@ -199,22 +410,26 @@ function parseYamlLike(text: string): any {
 }
 
 /**
- * ファイルからドキュメントを作成
+ * ファイルからドキュメントを作成（拡張版）
  */
-async function createDocumentFromFile(filePath: string, sourceType: 'faq' | 'event' | 'customer' | 'meeting_note' | 'system_info', metadata: any): Promise<Document> {
+async function createDocumentFromFile(
+  filePath: string, 
+  sourceType: 'faq' | 'event' | 'customer' | 'meeting_note' | 'system_info', 
+  metadata: EnhancedMetadata
+): Promise<Document> {
   const content = fs.readFileSync(filePath, 'utf-8');
   const fileExt = path.extname(filePath).toLowerCase();
-  const fileName = path.basename(filePath, fileExt);
+  const fileName = path.basename(filePath);
   
   // JSONファイルの場合は直接オブジェクトとして解析
   if (fileExt === '.json') {
     try {
       const jsonData = JSON.parse(content);
       return {
-        title: jsonData.title || fileName,
+        title: jsonData.title || metadata.title,
         content: jsonData.content || content,
         source_type: sourceType,
-        metadata: { ...metadata, ...jsonData.metadata }
+        metadata: metadata
       };
     } catch (error) {
       // JSONパースエラーの場合は通常のテキストとして扱う
@@ -227,12 +442,8 @@ async function createDocumentFromFile(filePath: string, sourceType: 'faq' | 'eve
     const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
     const cleanContent = content.replace(frontMatterRegex, '');
     
-    // タイトルを抽出（最初の# 行）
-    const titleMatch = cleanContent.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1].trim() : fileName;
-    
     return {
-      title,
+      title: metadata.title,
       content: cleanContent,
       source_type: sourceType,
       metadata
@@ -241,7 +452,7 @@ async function createDocumentFromFile(filePath: string, sourceType: 'faq' | 'eve
   
   // デフォルトはテキストファイルとして処理
   return {
-    title: fileName,
+    title: metadata.title,
     content,
     source_type: sourceType,
     metadata
