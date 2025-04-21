@@ -150,7 +150,7 @@ client.on(Events.MessageCreate, async (message: Message) => {
       logger.debug("discordRagIntegration.processMessage 呼び出し直前");
       
       // 強制RAGモード（デバッグ用）
-      const enableForceRag = true; // デバッグ用フラグ
+      const enableForceRag = false; // デバッグ用フラグ
       if (enableForceRag && (prompt.includes('記憶') || prompt.includes('会議') || prompt.includes('議事録') || prompt.includes('強制RAG'))) {
         console.log('⚠️⚠️⚠️ 強制RAGモードが有効化されました（デバッグ用）');
         prompt = "強制RAG " + prompt;

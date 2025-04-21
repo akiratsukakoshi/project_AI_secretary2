@@ -131,6 +131,12 @@ class DiscordRagIntegration {
             console.log('\n\n🔎🔎🔎 RAG検索を開始します 🔎🔎🔎');
             console.log('検出フィルター:', JSON.stringify(filters));
             
+            // デバッグログ追加: 検出フィルターの詳細情報
+            console.log('🔍🔍🔍 検出フィルター詳細情報(DiscordRAG) 🔍🔍🔍');
+            console.log('filters.source_type:', filters.source_type);
+            console.log('フィルタータイプ:', typeof filters.source_type);
+            console.log('フィルター完全値:', JSON.stringify(filters));
+            
             try {
               // デバッグログ追加：retriever.search呼び出し直前
               console.log('\n👉👉👉 retriever.search()呼び出し直前 👈👈👈');
@@ -163,7 +169,7 @@ class DiscordRagIntegration {
               const searchPrompt = await promptBuilder.buildRAGPrompt(cleanQuery, searchResults, userName);
               
               // RAG応答を生成
-              console.log('�� OpenAIにRAGプロンプトを送信して応答を生成します...');
+              console.log('🔎 OpenAIにRAGプロンプトを送信して応答を生成します...');
               aiResponse = await openaiService.generateResponseWithSystemPrompt(
                 searchPrompt[0], // システムプロンプト
                 searchPrompt[1], // ユーザープロンプト（検索結果を含む）

@@ -261,16 +261,18 @@ class QueryProcessor {
     if (query.includes('できること') || 
         query.includes('ワークフロー') || 
         query.includes('使い方') || 
-        query.includes('機能') ||
-        query.includes('ガクコ') ||
-        query.includes('gaku-co')) {
+        query.includes('ガクコ') || 
+        query.includes('がくこ') || 
+        query.includes('機能')) {
       filters.source_type = 'system_info';
     }
     
     // イベント情報の検出
     if (query.includes('イベント') || 
         query.includes('プログラム') || 
-        query.includes('企画')) {
+        query.includes('セミナー') ||
+        query.includes('講座') ||
+        query.includes('ワークショップ')) {
       filters.source_type = 'event';
     }
     
@@ -284,41 +286,10 @@ class QueryProcessor {
     
     // 顧客情報の検出
     if (query.includes('顧客') || 
-        query.includes('アレルギー') || 
-        query.includes('参加者')) {
+        query.includes('お客様') || 
+        query.includes('参加者') ||
+        query.includes('アレルギー')) {
       filters.source_type = 'customer';
-    }
-    
-    // 組織情報の検出
-    if (query.includes('原っぱ大学') || 
-        query.includes('組織') || 
-        query.includes('スタッフ') ||
-        query.includes('チーム') ||
-        query.includes('メンバー') ||
-        query.includes('部署') ||
-        query.includes('職員') ||
-        query.includes('教員')) {
-      // 組織情報の場合は値を明示的に設定
-      filters.source_type = 'organization_info';
-      
-      // デバッグログ追加: 組織情報検出の詳細
-      console.log('🏢🏢🏢 組織情報フィルター検出(QueryProcessor) 🏢🏢🏢');
-      console.log('検出条件に一致:', 
-        query.includes('原っぱ大学') ? '原っぱ大学' : 
-        query.includes('組織') ? '組織' : 
-        query.includes('スタッフ') ? 'スタッフ' : 
-        query.includes('チーム') ? 'チーム' : 
-        query.includes('メンバー') ? 'メンバー' : 
-        query.includes('部署') ? '部署' : 
-        query.includes('職員') ? '職員' : 
-        query.includes('教員') ? '教員' : '不明');
-      console.log('設定されたfilters.source_type:', filters.source_type);
-    }
-    
-    // その他情報の検出
-    if (query.includes('ニュース') || 
-        query.includes('知識')) {
-      filters.source_type = 'other_information';
     }
     
     logger.debug('検出されたフィルター: ' + JSON.stringify(filters));

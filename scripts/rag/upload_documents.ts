@@ -378,6 +378,12 @@ function detectContentTypeAndMetadata(filePath: string, defaultSourceType: 'faq'
     if (part === 'system' || part === 'system_info') inferredSourceType = 'system_info';
   }
   
+  // コンテンツからの推論
+  const inferredFromContent = inferSourceTypeFromContent(content);
+  if (inferredFromContent) {
+    inferredSourceType = inferredFromContent;
+  }
+  
   // 拡張メタデータの生成
   const enhancedMetadata = createEnhancedMetadata(
     content,
@@ -389,6 +395,85 @@ function detectContentTypeAndMetadata(filePath: string, defaultSourceType: 'faq'
     detectedSourceType: inferredSourceType, 
     metadata: enhancedMetadata 
   };
+}
+
+/**
+ * コンテンツの内容からソースタイプを推論する
+ * @param content ドキュメントの内容
+ * @returns 推論されたソースタイプ、または null（推論できない場合）
+ */
+function inferSourceTypeFromContent(content: string): 'faq' | 'event' | 'customer' | 'meeting_note' | 'system_info' | null {
+  // 内容を正規化
+  const normalizedContent = content.toLowerCase();
+  
+  // FAQ特有のパターン
+  if (
+    normalizedContent.includes('よくある質問') || 
+    normalizedContent.includes('faq') || 
+    normalizedContent.includes('frequently asked') || 
+    /q[\s]*[\.:].*\n.*a[\s]*[\.:]/.test(normalizedContent) ||  // Q: ... A: パターン
+    /質問[\s]*[\.:].*\n.*回答[\s]*[\.:]/.test(normalizedContent)    // 質問: ... 回答: パターン
+  ) {
+    return 'faq';
+  }
+  
+  // イベント特有のパターン
+  if (
+    normalizedContent.includes('イベント') || 
+    normalizedContent.includes('セミナー') || 
+    normalizedContent.includes('講演会') || 
+    normalizedContent.includes('開催日') || 
+    normalizedContent.includes('会場') || 
+    /\d{4}[\/-]\d{1,2}[\/-]\d{1,2}.*開催/.test(normalizedContent) ||  // 日付 + 開催
+    /場所.*[:：]/.test(normalizedContent)
+  ) {
+    return 'event';
+  }
+  
+  // 顧客情報特有のパターン
+  if (
+    normalizedContent.includes('顧客情報') || 
+    normalizedContent.includes('お客様情報') || 
+    normalizedContent.includes('取引先') || 
+    normalizedContent.includes('customer') || 
+    normalizedContent.includes('client') || 
+    /会社名.*[:：]/.test(normalizedContent) ||
+    /取引.*[:：]/.test(normalizedContent)
+  ) {
+    return 'customer';
+  }
+  
+  // 議事録特有のパターン
+  if (
+    normalizedContent.includes('議事録') || 
+    normalizedContent.includes('ミーティング') || 
+    normalizedContent.includes('打ち合わせ') || 
+    normalizedContent.includes('meeting note') || 
+    normalizedContent.includes('meeting minutes') || 
+    /日時.*[:：].*\d{4}[\/-]\d{1,2}[\/-]\d{1,2}/.test(normalizedContent) ||  // 日時: YYYY/MM/DD
+    /出席者.*[:：]/.test(normalizedContent) ||  // 出席者:
+    /議題.*[:：]/.test(normalizedContent)   // 議題:
+  ) {
+    return 'meeting_note';
+  }
+  
+  // システム情報特有のパターン
+  if (
+    normalizedContent.includes('システム') || 
+    normalizedContent.includes('マニュアル') || 
+    normalizedContent.includes('手順書') || 
+    normalizedContent.includes('system') || 
+    normalizedContent.includes('manual') || 
+    normalizedContent.includes('procedure') || 
+    normalizedContent.includes('ガイドライン') || 
+    /version.*[:：]/.test(normalizedContent) ||
+    /バージョン.*[:：]/.test(normalizedContent)
+  ) {
+    return 'system_info';
+  }
+  
+  // 推論できない場合はnullを返す
+  return null;
 }
 
 /**

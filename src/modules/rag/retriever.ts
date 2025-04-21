@@ -19,11 +19,36 @@ class Retriever {
       console.log('フィルター:', JSON.stringify(filters));
       console.log('取得上限:', limit || '未指定（デフォルト値使用）');
       
+      // デバッグログ追加: フィルター詳細情報
+      if (filters) {
+        console.log('🔍🔍🔍 フィルター詳細情報 🔍🔍🔍');
+        console.log('filters.source_type:', filters.source_type);
+        console.log('フィルタータイプ:', typeof filters.source_type);
+        console.log('フィルターキー一覧:', Object.keys(filters));
+        
+        // フィルター値を確実にstringに変換
+        if (filters.source_type) {
+          filters.source_type = String(filters.source_type);
+          console.log('フィルター値を文字列に変換:', filters.source_type);
+        }
+      } else {
+        console.log('🔍🔍🔍 フィルターは設定されていません 🔍🔍🔍');
+        // フィルターが設定されていない場合、空のオブジェクトを作成
+        filters = {};
+      }
+      
+      // フィルターのクローンを作成して渡す（参照渡しの問題を避けるため）
       const searchQuery: SearchQuery = {
         query,
-        filters,
+        filters: filters ? { ...filters } : undefined,
         limit
       };
+      
+      // デバッグログ追加: SearchQueryオブジェクト詳細
+      console.log('🔍🔍🔍 searchQuery詳細 🔍🔍🔍');
+      console.log('searchQuery.query:', searchQuery.query);
+      console.log('searchQuery.filters:', JSON.stringify(searchQuery.filters));
+      console.log('searchQuery.limit:', searchQuery.limit);
       
       console.log('🔄 ragService.search() を呼び出します...');
       console.log('searchQuery:', JSON.stringify(searchQuery));
