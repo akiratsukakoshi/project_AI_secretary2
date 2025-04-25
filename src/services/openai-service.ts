@@ -4,14 +4,27 @@ import { ChatMessage } from '../interfaces/openai';
 import { ConversationMessage } from '../interfaces/memory';
 import { env } from '../config/env';
 import logger from '../utilities/logger';
+import configLoader from '../utilities/config-loader';
 
 class OpenAIService {
   private openai: OpenAI;
+  private botConfig: any;
 
   constructor() {
     this.openai = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
     });
+    
+    // ボット設定の読み込み
+    try {
+      this.botConfig = configLoader.getBotConfig();
+      logger.info('ボット設定を読み込みました');
+    } catch (error) {
+      logger.error('ボット設定の読み込みに失敗しました。デフォルト設定を使用します。', error);
+      this.botConfig = {
+        system_prompt: "あなたはDiscord上で動作するAI秘書「gaku-co（ガクコ）」です。ユーザーからの質問に丁寧に答え、スケジュール管理やタスク管理をサポートします。"
+      };
+    }
   }
 
   /**
@@ -24,8 +37,8 @@ class OpenAIService {
     try {
       logger.debug(`OpenAI APIリクエスト開始: ${prompt.substring(0, 50)}...`);
       
-      // システムプロンプト
-      const systemPrompt = "あなたはDiscord上で動作するAI秘書「gaku-co（ガクコ）」です。ユーザーからの質問に丁寧に答え、スケジュール管理やタスク管理をサポートします。";
+      // 外部化されたシステムプロンプトを使用
+      const systemPrompt = this.botConfig.system_prompt;
       
       // 会話履歴の最新のメッセージを抽出（最大5件）
       const recentMessages = history

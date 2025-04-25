@@ -1,5 +1,6 @@
 import { Message } from 'discord.js';
 import logger from '../../../utilities/logger';
+import botConfigService from '../../../services/bot-config-service';
 
 /**
  * ユーザーからの入力クエリを処理するクラス
@@ -21,8 +22,15 @@ class QueryProcessor {
     // メンションを除去（Discord IDパターン）
     query = query.replace(/<@\!?\d+>/g, '').trim();
     
-    // 「ガクコ、」などの呼びかけを除去
-    query = query.replace(/^(ガクコ|がくこ|gakuco)(、|,|\s+)/i, '').trim();
+    // 現在のボット設定からトリガーワードを取得
+    const currentConfig = botConfigService.getCurrentBotConfig();
+    const triggerWords = currentConfig.trigger_words || ["ガクコ", "がくこ", "gakuco"];
+    
+    // トリガーワードのパターンを動的に構築
+    const triggerPattern = new RegExp(`^(${triggerWords.join('|')})(、|,|\\s+)`, 'i');
+    
+    // ボットの呼びかけを除去
+    query = query.replace(triggerPattern, '').trim();
     
     // 「探して：」「教えて：」などのトリガーワードを除去
     query = query.replace(/^(探して|検索して|教えて|調べて)(：|:|\s+)/i, '').trim();
@@ -46,6 +54,10 @@ class QueryProcessor {
     console.log("入力内容完全版:", content);
     logger.debug("detectTriggerType メソッドが呼び出されました: " + content);
 
+    // 現在のボット設定からトリガーワードを取得
+    const currentConfig = botConfigService.getCurrentBotConfig();
+    const triggerWords = currentConfig.trigger_words || ["ガクコ", "がくこ", "gakuco"];
+    
     // すべてのパターンマッチングを表示するデバッグコード
     console.log("\n📝 パターンマッチングデバッグ 📝");
     console.log("「記憶を確認」マッチ:", content.includes('記憶を確認') ? "はい" : "いいえ");
@@ -75,9 +87,12 @@ class QueryProcessor {
       return 'rag';
     }
     
+    // トリガーワードを動的に構築
+    const triggerPattern = triggerWords.map((word: string) => word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
+    
     // 明示的なRAG起動トリガーワード（最優先）
     // パターンを拡張: 「記憶を確認」の後の「して」なども考慮
-    const hasExplicitRagTrigger = content.match(/ガクコ.*記憶を確認|ガクコ.*データを確認|ガクコ.*記録確認|記憶を確認して|記憶を確認|データを確認|記録確認|情報を確認|情報を探|検索して|履歴を確認|過去の.*を確認|議事録|会議.*議事録|会議.*記録/i);
+    const hasExplicitRagTrigger = content.match(new RegExp(`(${triggerPattern}).*記憶を確認|(${triggerPattern}).*データを確認|(${triggerPattern}).*記録確認|記憶を確認して|記憶を確認|データを確認|記録確認|情報を確認|情報を探|検索して|履歴を確認|過去の.*を確認|議事録|会議.*議事録|会議.*記録`, 'i'));
     
     // デバッグログ追加：明示的RAGトリガー
     console.log('明示的RAGトリガー条件チェック結果:', hasExplicitRagTrigger ? 
@@ -105,12 +120,12 @@ class QueryProcessor {
     }
 
     // 明示的なRAG検索トリガーの検出（命令形も含める）
-    const hasRagTrigger = content.match(/ガクコ.*探して|検索して|調べて|ガクコ.*について|検索|教えて.*情報|調査|確認して|教えて|知りたい|共有して/i);
+    const hasRagTrigger = content.match(new RegExp(`(${triggerPattern}).*探して|検索して|調べて|(${triggerPattern}).*について|検索|教えて.*情報|調査|確認して|教えて|知りたい|共有して`, 'i'));
     console.log("- RAGトリガー検出:", hasRagTrigger ? `あり: "${hasRagTrigger[0]}"` : "なし");
     logger.info("RAGトリガー検出: " + (hasRagTrigger ? `あり: "${hasRagTrigger[0]}"` : "なし"));
     
     // 明示的なワークフロートリガーの検出
-    const hasWorkflowTrigger = content.match(/ガクコ.*ワークフロー|ワークフロー実行|タスク管理|タスク追加|カレンダー|予定管理|スケジュール設定/i);
+    const hasWorkflowTrigger = content.match(new RegExp(`(${triggerPattern}).*ワークフロー|ワークフロー実行|タスク管理|タスク追加|カレンダー|予定管理|スケジュール設定`, 'i'));
     console.log("- ワークフロートリガー検出:", hasWorkflowTrigger ? `あり: "${hasWorkflowTrigger[0]}"` : "なし");
     logger.info("ワークフロートリガー検出: " + (hasWorkflowTrigger ? `あり: "${hasWorkflowTrigger[0]}"` : "なし"));
     

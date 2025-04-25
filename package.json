@@ -9,7 +9,10 @@
     "dev": "ts-node src/index.ts",
     "watch": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test:rag": "ts-node src/scripts/test-rag-connection.ts"
+    "test:rag": "ts-node src/scripts/test-rag-connection.ts",
+    "test:config": "ts-node src/scripts/test-config.ts",
+    "switch-bot": "ts-node src/scripts/switch-bot.ts",
+    "list-bots": "ts-node src/scripts/switch-bot.ts"
   },
   "keywords": [
     "ai",
@@ -21,10 +24,12 @@
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
+    "@types/js-yaml": "^4.0.9",
     "crypto": "^1.0.1",
     "date-fns": "^3.6.0",
     "discord.js": "^14.18.0",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.5.0",
+    "js-yaml": "^4.1.0",
     "openai": "^4.91.1",
     "uuid": "^11.1.0"
   },

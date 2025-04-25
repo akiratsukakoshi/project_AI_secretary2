@@ -159,6 +159,68 @@ npm run dev
   - UI/UX最適化
   - 拡張機能の追加
 
+## ボットキャラクター設定
+
+ガクコは複数のキャラクター設定（プロファイル）を持ち、状況に応じて切り替えることができます。
+
+### 利用可能なキャラクタープロファイル
+
+- **gakuco**: デフォルトのバランスの取れたスタイル
+- **formal**: より丁寧でフォーマルなビジネススタイル
+- **casual**: フレンドリーでカジュアルなスタイル
+
+### キャラクターの切り替え方法
+
+キャラクター設定を切り替えるには、以下のコマンドを使用します：
+
+```bash
+# キャラクター一覧の表示
+npm run list-bots
+
+# キャラクターの切り替え
+npm run switch-bot -- <プロファイル名>
+
+# 例: フォーマルなキャラクターに切り替え
+npm run switch-bot -- formal
+
+# 例: カジュアルなキャラクターに切り替え
+npm run switch-bot -- casual
+```
+
+### カスタムキャラクターの作成
+
+独自のキャラクター設定を作成するには、`config/bots/` ディレクトリに新しいYAMLファイルを作成します。ファイル名がプロファイル名となります。
+
+設定ファイルの例：
+```yaml
+name: "your-bot-name"
+display_name: "表示名"
+version: "1.0"
+description: "ボットの説明"
+
+# システムプロンプト（性格、振る舞い）
+system_prompt: |
+  あなたはDiscord上で動作するAI秘書「XXX」です。
+  ユーザーとの会話では〇〇な口調を使い、△△に接してください。
+
+# 応答スタイル
+response_style:
+  formality: "friendly"  # formal, polite, casual, friendly
+  verbosity: "concise"   # verbose, standard, concise, brief
+  emoji: true            # true/false
+
+# その他の設定...
+```
+
+### アプリケーション起動時のキャラクター設定
+
+アプリケーションは最後に選択したキャラクターを記憶し、次回起動時に自動的に読み込みます。特定のキャラクターを起動時に強制的に選択したい場合は、`src/index.ts` の以下の行を編集します：
+
+```typescript
+// 特定のプロファイルを起動時に選択したい場合は以下のようにコメントを外して指定
+// botConfigService.switchBotProfile('formal');
+```
+
 ## 開発ガイド
 
 プロジェクトの詳細な技術情報と実装計画については以下のドキュメントを参照してください：

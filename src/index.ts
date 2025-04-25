@@ -7,6 +7,8 @@ import { env } from './config/env';
 import { setupGlobalErrorHandlers } from './utilities/error-handler';
 import { testRAGConnection } from './modules/rag/rag-test';
 import discordRagIntegration from './modules/rag/discordRagIntegration';
+import configLoader from './utilities/config-loader';
+import botConfigService from './services/bot-config-service';
 
 // ワークフローモジュールをインポート
 import { 
@@ -21,6 +23,31 @@ import {
 
 // グローバルエラーハンドラーのセットアップ
 setupGlobalErrorHandlers();
+
+// システム設定の読み込み（グローバル設定が実装されるまではデフォルト設定を使用）
+try {
+  logger.info('ボット設定の初期化中...');
+  
+  // 利用可能なボットプロファイルを確認
+  const availableProfiles = botConfigService.getAvailableProfiles();
+  if (availableProfiles.length > 0) {
+    logger.info(`利用可能なボットプロファイル: ${availableProfiles.join(', ')}`);
+    
+    // 現在使用中のボットプロファイルの情報を表示
+    const currentConfig = botConfigService.getCurrentBotConfig();
+    logger.info(`現在のボット: ${currentConfig.display_name} (${currentConfig.name})`);
+    
+    // ボットプロファイルの変更方法を表示
+    logger.info('ボットプロファイルの変更には以下のコマンドを使用: npm run switch-bot -- <プロファイル名>');
+  } else {
+    logger.warn('利用可能なボットプロファイルが見つかりません');
+  }
+  
+  // 特定のプロファイルを起動時に選択したい場合は以下のようにコメントを外して指定
+  // botConfigService.switchBotProfile('formal');
+} catch (error) {
+  logger.error('ボット設定の初期化中にエラーが発生しました:', error);
+}
 
 // ワークフローマネージャーの初期化
 const llmClient = new OpenAIClient(env.OPENAI_API_KEY);
@@ -81,15 +108,25 @@ client.on(Events.MessageCreate, async (message: Message) => {
   // Bot のメッセージは無視
   if (message.author.bot) return;
 
+  // 現在のボット設定からトリガーワードを取得
+  const currentConfig = botConfigService.getCurrentBotConfig();
+  const triggerWords = currentConfig.trigger_words || ["ガクコ", "がくこ", "gakuco"];
+  
   // ガクコの呼び出し方法を拡張
   // 1. プレフィックス `!ai`
   // 2. メンション
-  // 3. 「ガクコ」という名前を含む
+  // 3. 設定されたトリガーワードのいずれかを含む
   const isMentioned = message.mentions.users.has(client.user?.id || '');
   const hasPrefix = message.content.startsWith('!ai');
-  const hasName = message.content.toLowerCase().includes('ガクコ') || 
-                 message.content.toLowerCase().includes('がくこ') ||
-                 message.content.toLowerCase().includes('gakuco');
+  
+  // トリガーワードのチェック
+  let hasName = false;
+  for (const word of triggerWords) {
+    if (message.content.toLowerCase().includes(word.toLowerCase())) {
+      hasName = true;
+      break;
+    }
+  }
 
   if (isMentioned || hasPrefix || hasName) {
     let prompt = message.content;
@@ -101,7 +138,7 @@ client.on(Events.MessageCreate, async (message: Message) => {
     
     // 空のプロンプトチェック
     if (prompt.trim().length === 0) {
-      message.reply({ content: 'こんにちは！AI秘書「ガクコ」です。何かお手伝いできることはありますか？' });
+      message.reply({ content: `こんにちは！${currentConfig.display_name}です。何かお手伝いできることはありますか？` });
       return;
     }
 

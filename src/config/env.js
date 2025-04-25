@@ -4,7 +4,7 @@ exports.env = void 0;
 var dotenv_1 = require("dotenv");
 var path_1 = require("path");
 // 環境変数の読み込み
-dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), '.env') });
+dotenv_1.config({ path: path_1.resolve(process.cwd(), '.env') });
 // 環境変数のバリデーション
 var validateEnv = function () {
     var requiredEnvVars = ['DISCORD_TOKEN', 'OPENAI_API_KEY'];
